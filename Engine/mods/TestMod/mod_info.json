@@ -1,0 +1,8 @@
+{
+  "id": "TestMod",
+  "name": "The Spice Route Mod",
+  "version": "1.0.0",
+  "author": "Antigravity",
+  "description": "Un mod de prueba que añade especias usando Lua y el GameRegistry.",
+  "dependencies": []
+}

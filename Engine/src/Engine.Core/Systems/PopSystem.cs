@@ -1,5 +1,7 @@
+using Engine.Events;
 using Engine.Interfaces;
 using Engine.Models;
+using Engine.Services;
 
 namespace Engine.Systems;
 
@@ -25,55 +27,49 @@ public class PopSystem : ISystem
     private const int DemographicInterval = 30; // ticks entre actualizaciones demográficas
     private const int NeedHistoryWindow   = 30; // días de historial a conservar
 
-    // ============================================================
-    // Definición canónica de todas las necesidades del juego
-    // ============================================================
-    private static readonly List<NeedDefinition> AllNeeds = new()
-    {
-        // === TIER 0: SUPERVIVENCIA ===
-        new() { Good = GoodType.Grain,  Tier = NeedTier.Survival,    QuantityPerThousand = 2.0 },
-        new() { Good = GoodType.Water,  Tier = NeedTier.Survival,    QuantityPerThousand = 1.0 },
-
-        // === TIER 1: SUBSISTENCIA ===
-        new() { Good = GoodType.Fish,     Tier = NeedTier.Subsistence, QuantityPerThousand = 0.4 },
-        new() { Good = GoodType.Meat,     Tier = NeedTier.Subsistence, QuantityPerThousand = 0.3,
-                ApplicableTypes = new() { PopType.Nobility, PopType.Capitalists, PopType.Merchants } },
-        new() { Good = GoodType.Cloth,    Tier = NeedTier.Subsistence, QuantityPerThousand = 0.2 },
-        new() { Good = GoodType.Medicine, Tier = NeedTier.Subsistence, QuantityPerThousand = 0.05 },
-
-        // === TIER 2: COMODIDAD ===
-        new() { Good = GoodType.Tools,     Tier = NeedTier.Comfort, QuantityPerThousand = 0.1,
-                ApplicableTypes = new() { PopType.Workers, PopType.Artisans, PopType.Peasants } },
-        new() { Good = GoodType.Furniture, Tier = NeedTier.Comfort, QuantityPerThousand = 0.05,
-                MinWealthTier = 1 },
-
-        // === TIER 3: PROSPERIDAD ===
-        new() { Good = GoodType.LuxuryGoods, Tier = NeedTier.Prosperity, QuantityPerThousand = 0.05, MinWealthTier = 2 },
-        new() { Good = GoodType.Books,       Tier = NeedTier.Prosperity, QuantityPerThousand = 0.02, MinWealthTier = 2,
-                ApplicableTypes = new() { PopType.Clergy, PopType.Merchants, PopType.Capitalists, PopType.Nobility } },
-
-        // === TIER 4: ÉLITE ===
-        new() { Good = GoodType.Jewelry, Tier = NeedTier.Elite, QuantityPerThousand = 0.01, MinWealthTier = 4 },
-        new() { Good = GoodType.FineArt, Tier = NeedTier.Elite, QuantityPerThousand = 0.005, MinWealthTier = 4,
-                ApplicableTypes = new() { PopType.Nobility, PopType.Capitalists } },
-    };
+    // Las necesidades se cargan desde GameRegistry (data/definitions/needs.json)
+    // Los mods pueden añadir sus propias necesidades añadiendo entradas a ese archivo.
 
     // ============================================================
     public void Update(GameContext context, long currentTick)
     {
         foreach (var province in context.Provinces)
         {
-            ProductionPhase(province);
-            IncomePhase(province);
-            var fulfillments = NeedSatisfactionPhase(province, currentTick);
-            province.Market.EndOfDayPriceUpdate();
-            PsychologyPhase(province, fulfillments);
-            HealthPhase(province, fulfillments);
+            ScriptingService.TriggerHook("BeforeProvinceUpdate", province);
+
+            try { ProductionPhase(province); }
+            catch (Exception ex) { GameLogger.Error(Name, $"ProductionPhase en {province.Id}", ex); }
+
+            ScriptingService.TriggerHook("AfterProductionPhase", province);
+
+            try { IncomePhase(province); }
+            catch (Exception ex) { GameLogger.Error(Name, $"IncomePhase en {province.Id}", ex); }
+
+            Dictionary<PopGroup, List<NeedFulfillment>> fulfillments = new();
+            try { fulfillments = NeedSatisfactionPhase(province, currentTick); }
+            catch (Exception ex) { GameLogger.Error(Name, $"NeedSatisfactionPhase en {province.Id}", ex); }
+
+            ScriptingService.TriggerHook("AfterNeedSatisfactionPhase", province);
+
+            try { province.Market.EndOfDayPriceUpdate(); }
+            catch (Exception ex) { GameLogger.Error(Name, $"PriceUpdate en {province.Id}", ex); }
+
+            try { PsychologyPhase(province, fulfillments); }
+            catch (Exception ex) { GameLogger.Error(Name, $"PsychologyPhase en {province.Id}", ex); }
+
+            try { HealthPhase(province, fulfillments); }
+            catch (Exception ex) { GameLogger.Error(Name, $"HealthPhase en {province.Id}", ex); }
 
             if (currentTick % DemographicInterval == 0)
-                DemographicsPhase(province);
+            {
+                try { DemographicsPhase(province); }
+                catch (Exception ex) { GameLogger.Error(Name, $"DemographicsPhase en {province.Id}", ex); }
+            }
 
-            SocialMobilityPhase(province, currentTick);
+            try { SocialMobilityPhase(province, currentTick); }
+            catch (Exception ex) { GameLogger.Error(Name, $"SocialMobilityPhase en {province.Id}", ex); }
+
+            ScriptingService.TriggerHook("AfterProvinceUpdate", province);
         }
     }
 
@@ -125,7 +121,7 @@ public class PopSystem : ISystem
 
             foreach (NeedTier tier in Enum.GetValues<NeedTier>().OrderBy(t => (int)t))
             {
-                foreach (var need in AllNeeds.Where(n => n.Tier == tier && n.AppliesTo(pop)))
+            foreach (var need in GameRegistry.Needs.Where(n => n.Tier == tier && n.AppliesTo(pop)))
                 {
                     double required = need.ComputeRequired(pop.Size);
                     if (required <= 0) continue;
@@ -155,9 +151,9 @@ public class PopSystem : ISystem
             pop.DailyExpenses = totalExpenses;
             pop.RecalculateWealthTier();
 
-            // Historial: conservar solo los últimos NeedHistoryWindow * AllNeeds días
+            // Historial: conservar solo los últimos NeedHistoryWindow * Needs.Count días
             pop.NeedHistory.AddRange(popFulfillments);
-            int maxHistory = NeedHistoryWindow * AllNeeds.Count;
+            int maxHistory = NeedHistoryWindow * Math.Max(1, GameRegistry.Needs.Count);
             if (pop.NeedHistory.Count > maxHistory)
                 pop.NeedHistory.RemoveRange(0, pop.NeedHistory.Count - maxHistory);
 
@@ -194,8 +190,16 @@ public class PopSystem : ISystem
             pop.Consciousness = Math.Clamp(pop.Consciousness + (float)conscienceDelta, 0f, 1f);
 
             // Radicalismo: acumulación de Militancy * Consciousness sostenidos
+            float oldRadicalism = pop.Radicalism;
             double radTarget  = pop.Militancy * pop.Consciousness;
             pop.Radicalism    = Math.Clamp(pop.Radicalism * 0.99f + (float)radTarget * 0.01f, 0f, 1f);
+
+            // Evento: cruce del umbral de radicalización (solo al cruzar, no cada tick)
+            if (oldRadicalism < 0.7f && pop.Radicalism >= 0.7f)
+            {
+                EventBus.Publish(new PopRadicalizedEvent(pop, province));
+                GameLogger.Warning("PopSystem", $"Pop radicalizado: {pop.Type} en {province.Id} (Rad: {pop.Radicalism:P0})");
+            }
 
             // Cohesión social: baja con hambre y radicalism, sube en estabilidad
             double cohesionDelta = (survivalRatio - 0.5) * 0.01 - pop.Radicalism * 0.005;
@@ -245,7 +249,13 @@ public class PopSystem : ISystem
             pop.Size = Math.Max(0, pop.Size + delta);
         }
 
-        // Eliminar pops extintas
+        // Eliminar pops extintas y publicar evento
+        var died = province.Pops.Where(p => p.Size <= 0).ToList();
+        foreach (var dead in died)
+        {
+            EventBus.Publish(new PopDiedEvent(dead, province, "Natural"));
+            GameLogger.Info("PopSystem", $"Pop extinguido: {dead.Type} ({dead.Culture}/{dead.Religion}) en {province.Id}");
+        }
         province.Pops.RemoveAll(p => p.Size <= 0);
     }
 
@@ -263,16 +273,16 @@ public class PopSystem : ISystem
         foreach (var pop in province.Pops)
         {
             // Peasants con alta Literacy + Savings → se convierten en Artisans
-            if (pop.Type == PopType.Peasants && pop.Literacy > 0.3f && pop.WealthTier >= 2)
+            if (pop.Type == PopTypes.Peasants && pop.Literacy > 0.3f && pop.WealthTier >= 2)
             {
-                int migrating = pop.Size / 20; // 5% del grupo
+                int migrating = pop.Size / 20;
                 if (migrating > 0)
                 {
                     pop.Size -= migrating;
                     double savingsTransferred = (pop.Savings / (pop.Size + migrating)) * migrating;
                     pop.Savings -= savingsTransferred;
 
-                    newPops.Add(new PopGroup(PopType.Artisans, pop.Culture, pop.Religion, migrating, savingsTransferred)
+                    newPops.Add(new PopGroup(PopTypes.Artisans, pop.Culture, pop.Religion, migrating, savingsTransferred)
                     {
                         HealthIndex    = pop.HealthIndex,
                         Literacy       = pop.Literacy,
@@ -280,11 +290,13 @@ public class PopSystem : ISystem
                         Consciousness  = pop.Consciousness,
                         SocialCohesion = pop.SocialCohesion
                     });
+                    EventBus.Publish(new PopMobilityEvent(province, PopTypes.Peasants, PopTypes.Artisans, migrating));
+                    GameLogger.Info("PopSystem", $"Movilidad social en {province.Id}: {migrating} Campesinos → Artesanos");
                 }
             }
 
             // Workers con altos Savings → se convierten en Merchants
-            if (pop.Type == PopType.Workers && pop.WealthTier >= 3)
+            if (pop.Type == PopTypes.Workers && pop.WealthTier >= 3)
             {
                 int migrating = pop.Size / 30;
                 if (migrating > 0)
@@ -293,7 +305,7 @@ public class PopSystem : ISystem
                     double savingsTransferred = (pop.Savings / (pop.Size + migrating)) * migrating;
                     pop.Savings -= savingsTransferred;
 
-                    newPops.Add(new PopGroup(PopType.Merchants, pop.Culture, pop.Religion, migrating, savingsTransferred)
+                    newPops.Add(new PopGroup(PopTypes.Merchants, pop.Culture, pop.Religion, migrating, savingsTransferred)
                     {
                         HealthIndex    = pop.HealthIndex,
                         Literacy       = pop.Literacy,
@@ -301,6 +313,8 @@ public class PopSystem : ISystem
                         Consciousness  = pop.Consciousness,
                         SocialCohesion = pop.SocialCohesion
                     });
+                    EventBus.Publish(new PopMobilityEvent(province, PopTypes.Workers, PopTypes.Merchants, migrating));
+                    GameLogger.Info("PopSystem", $"Movilidad social en {province.Id}: {migrating} Trabajadores → Mercaderes");
                 }
             }
 

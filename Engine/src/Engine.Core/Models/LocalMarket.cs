@@ -1,38 +1,50 @@
+using Engine.Services;
+
 namespace Engine.Models;
 
 /// <summary>
-/// Mercado local de una provincia. Centraliza toda la actividad económica:
-/// los slots de empleo venden producción aquí, y las pops compran sus necesidades aquí.
+/// Mercado local de una provincia. Centraliza toda la actividad económica.
+/// Los stacks se inicializan desde el GameRegistry — soporta bienes de mods automáticamente.
 /// </summary>
 public class LocalMarket
 {
-    public Dictionary<GoodType, MarketStack> Stacks { get; set; } = new();
+    public Dictionary<string, MarketStack> Stacks { get; set; } = new();
 
-    public LocalMarket()
+    public LocalMarket() { }
+
+    /// <summary>
+    /// Inicializa el mercado con todos los bienes registrados en el GameRegistry.
+    /// Llamar después de que el GameRegistry esté cargado.
+    /// </summary>
+    public void InitializeFromRegistry()
     {
-        foreach (GoodType good in Enum.GetValues<GoodType>())
-        {
-            double basePrice = GoodDefinitions.BasePrice.GetValueOrDefault(good, 10.0);
-            Stacks[good] = new MarketStack(good, basePrice);
-        }
+        foreach (var good in GameRegistry.Goods.Values)
+            Stacks[good.Id] = new MarketStack(good.Id, good.BasePrice);
     }
 
-    public (double purchased, double cost) TryBuy(GoodType good, double quantity)
+    public (double purchased, double cost) TryBuy(string good, double quantity)
         => Stacks.TryGetValue(good, out var stack) ? stack.TryBuy(quantity) : (0, 0);
 
-    public void AddSupply(GoodType good, double quantity)
+    public void AddSupply(string good, double quantity)
     {
         if (Stacks.TryGetValue(good, out var stack))
             stack.AddSupply(quantity);
+        else
+        {
+            // Bien de mod no conocido aún — crear stack al vuelo
+            double basePrice = GameRegistry.GetBasePrice(good);
+            var newStack     = new MarketStack(good, basePrice);
+            newStack.AddSupply(quantity);
+            Stacks[good]     = newStack;
+        }
     }
 
-    /// <summary>Ejecutar al final de cada día para ajustar precios dinámicos.</summary>
     public void EndOfDayPriceUpdate()
     {
         foreach (var stack in Stacks.Values)
             stack.RecalculatePrice();
     }
 
-    public double GetPrice(GoodType good) => Stacks.TryGetValue(good, out var s) ? s.CurrentPrice : 0;
-    public double GetStock(GoodType good) => Stacks.TryGetValue(good, out var s) ? s.Available : 0;
+    public double GetPrice(string good) => Stacks.TryGetValue(good, out var s) ? s.CurrentPrice : 0;
+    public double GetStock(string good) => Stacks.TryGetValue(good, out var s) ? s.Available   : 0;
 }

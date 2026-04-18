@@ -1,0 +1,11 @@
+[
+  { "id": "peasants",    "wealthClass": "Low",    "baseLiteracy": 0.04 },
+  { "id": "workers",     "wealthClass": "Low",    "baseLiteracy": 0.12 },
+  { "id": "artisans",    "wealthClass": "Low",    "baseLiteracy": 0.25 },
+  { "id": "merchants",   "wealthClass": "Medium", "baseLiteracy": 0.45 },
+  { "id": "clergy",      "wealthClass": "Medium", "baseLiteracy": 0.65 },
+  { "id": "nobility",    "wealthClass": "High",   "baseLiteracy": 0.80 },
+  { "id": "capitalists", "wealthClass": "High",   "baseLiteracy": 0.70 },
+  { "id": "soldiers",    "wealthClass": "Low",    "baseLiteracy": 0.15 },
+  { "id": "slaves",      "wealthClass": "Low",    "baseLiteracy": 0.01 }
+]

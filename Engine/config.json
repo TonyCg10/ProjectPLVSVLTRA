@@ -1,0 +1,7 @@
+{
+  "language": "es",
+  "defaultTimeScale": 1,
+  "debugMode": true,
+  "logLevel": "Info",
+  "debugLogLines": 6
+}

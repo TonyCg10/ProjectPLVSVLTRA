@@ -1,0 +1,67 @@
+[
+  {
+    "provinceId": "tarsis",
+    "type": "peasants",
+    "culture": "tarsiano",
+    "religion": "solaris",
+    "size": 8000,
+    "savings": 120.0,
+    "healthIndex": 0.55,
+    "literacy": 0.04,
+    "militancy": 0.05,
+    "consciousness": 0.03,
+    "socialCohesion": 0.9
+  },
+  {
+    "provinceId": "tarsis",
+    "type": "workers",
+    "culture": "tarsiano",
+    "religion": "solaris",
+    "size": 2500,
+    "savings": 200.0,
+    "healthIndex": 0.5,
+    "literacy": 0.12,
+    "militancy": 0.1,
+    "consciousness": 0.08,
+    "socialCohesion": 0.85
+  },
+  {
+    "provinceId": "tarsis",
+    "type": "merchants",
+    "culture": "tarsiano",
+    "religion": "solaris",
+    "size": 400,
+    "savings": 2500.0,
+    "healthIndex": 0.75,
+    "literacy": 0.45,
+    "militancy": 0.02,
+    "consciousness": 0.3,
+    "socialCohesion": 0.95
+  },
+  {
+    "provinceId": "tarsis",
+    "type": "nobility",
+    "culture": "tarsiano",
+    "religion": "solaris",
+    "size": 80,
+    "savings": 15000.0,
+    "healthIndex": 0.85,
+    "literacy": 0.8,
+    "militancy": 0.0,
+    "consciousness": 0.5,
+    "socialCohesion": 1.0
+  },
+  {
+    "provinceId": "tarsis",
+    "type": "clergy",
+    "culture": "tarsiano",
+    "religion": "solaris",
+    "size": 200,
+    "savings": 800.0,
+    "healthIndex": 0.7,
+    "literacy": 0.65,
+    "militancy": 0.01,
+    "consciousness": 0.4,
+    "socialCohesion": 0.95
+  }
+]

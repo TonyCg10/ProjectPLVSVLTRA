@@ -1,0 +1,13 @@
+[
+  {
+    "provinceId": "tarsis",
+    "stocks": {
+      "grain":    80.0,
+      "water":    50.0,
+      "fish":     20.0,
+      "cloth":    15.0,
+      "tools":     8.0,
+      "medicine":  3.0
+    }
+  }
+]

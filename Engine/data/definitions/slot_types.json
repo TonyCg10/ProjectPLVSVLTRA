@@ -1,0 +1,14 @@
+[
+  { "id": "farm" },
+  { "id": "fishery" },
+  { "id": "ranch" },
+  { "id": "textile_mill" },
+  { "id": "apothecary" },
+  { "id": "workshop" },
+  { "id": "carpentry" },
+  { "id": "luxury_atelier" },
+  { "id": "school" },
+  { "id": "church" },
+  { "id": "barracks" },
+  { "id": "trading_post" }
+]

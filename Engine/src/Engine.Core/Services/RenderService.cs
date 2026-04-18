@@ -1,64 +1,90 @@
 using Engine.Models;
+using Engine.Services;
 
 namespace Engine.Services;
 
 public static class RenderService
 {
-    public static void Render(GameContext context)
+    public static void Render(GameContext context, string statusMessage = "")
     {
         Console.Clear();
+        string estado = context.IsPaused
+            ? Loc.UI("paused")
+            : $"▶ {Loc.UI("speed")}{context.TimeScale}";
+
+        string dateStr = GameCalendar.DisplayDate(context.CurrentDate);
+
         Console.WriteLine("══════════════════════════════════════════════════════════════");
-        Console.WriteLine($"  ProjectPLVSVLTRA  |  DÍA: {context.CurrentTick,6}  |  Estado: {(context.IsPaused ? "⏸  PAUSA" : $"▶ x{context.TimeScale}")}");
-        Console.WriteLine($"  Población mundial: {context.WorldPopulation:N0}");
+        Console.WriteLine($"  ProjectPLVSVLTRA  |  {dateStr}  |  {estado}");
+        Console.WriteLine($"  {Loc.UI("world_pop")}: {context.WorldPopulation:N0}");
+        if (!string.IsNullOrEmpty(statusMessage))
+            Console.WriteLine($"  {statusMessage}");
         Console.WriteLine("══════════════════════════════════════════════════════════════");
 
         foreach (var province in context.Provinces)
         {
-            Console.WriteLine($"\n  ▸ {province.Name} [{province.Region}]  — Población total: {province.TotalPopulation:N0}");
+            string provinceName = Loc.Get(province.NameKey);
+            string regionName   = Loc.Get(province.RegionKey);
+
+            Console.WriteLine($"\n  ▸ {provinceName} [{regionName}]  — {province.TotalPopulation:N0}");
 
             foreach (var pop in province.Pops)
             {
-                double survivalAvg    = pop.GetAverageFulfillment(NeedTier.Survival,    7);
-                double subsistAvg     = pop.GetAverageFulfillment(NeedTier.Subsistence, 7);
+                double survivalAvg   = pop.GetAverageFulfillment(NeedTier.Survival,    7);
+                double subsistAvg    = pop.GetAverageFulfillment(NeedTier.Subsistence, 7);
 
-                string healthBar      = BuildBar(pop.HealthIndex,    10);
-                string militancyBar   = BuildBar(pop.Militancy,      10);
-                string cohesionBar    = BuildBar(pop.SocialCohesion, 10);
+                string healthBar     = BuildBar(pop.HealthIndex,    10);
+                string militancyBar  = BuildBar(pop.Militancy,      10);
+                string cohesionBar   = BuildBar(pop.SocialCohesion, 10);
+                string popTypeName   = Loc.PopType(pop.Type);
 
-                Console.WriteLine($"    [{pop.Type,-12}] x{pop.Size,7:N0}  " +
-                                  $"Wealth:{pop.WealthTier}  " +
-                                  $"Health:[{healthBar}]  " +
-                                  $"Mil:[{militancyBar}]  " +
-                                  $"Coh:[{cohesionBar}]");
+                Console.WriteLine($"    [{popTypeName,-14}] x{pop.Size,7:N0}  " +
+                                  $"W:{pop.WealthTier}  " +
+                                  $"❤:[{healthBar}]  " +
+                                  $"⚔:[{militancyBar}]  " +
+                                  $"⚙:[{cohesionBar}]");
 
-                Console.WriteLine($"    {"",14}  " +
+                Console.WriteLine($"    {"",16}  " +
                                   $"Savings:{pop.Savings,9:N1}  " +
-                                  $"Income:{pop.DailyIncome,7:N1}/día  " +
+                                  $"+{pop.DailyIncome,6:N1}/día  " +
                                   $"Lit:{pop.Literacy:P0}  " +
                                   $"Con:{pop.Consciousness:P0}  " +
-                                  $"Survival:{survivalAvg:P0}  Sub:{subsistAvg:P0}");
+                                  $"Sv:{survivalAvg:P0} Sub:{subsistAvg:P0}");
             }
 
-            Console.WriteLine($"\n    Mercado ({province.Name}):");
-            var importantGoods = new[] { GoodType.Grain, GoodType.Fish, GoodType.Cloth, GoodType.Medicine, GoodType.Tools };
-            foreach (var good in importantGoods)
+            Console.WriteLine($"\n    {Loc.UI("market")} ({provinceName}):");
+            
+            // Mostrar todos los bienes registrados dinámicamente
+            foreach (var goodDef in GameRegistry.Goods.Values)
             {
-                double stock = province.Market.GetStock(good);
-                double price = province.Market.GetPrice(good);
-                double base_ = GoodDefinitions.BasePrice.GetValueOrDefault(good, 1);
-                string priceIndicator = price > base_ * 1.3 ? "↑" : price < base_ * 0.7 ? "↓" : "─";
-                Console.WriteLine($"      {good,-14} Stock:{stock,8:N1}  Precio:{price,6:N2} {priceIndicator}");
+                string goodId    = goodDef.Id;
+                double stock     = province.Market.GetStock(goodId);
+                double price     = province.Market.GetPrice(goodId);
+                double basePrice = GameRegistry.GetBasePrice(goodId);
+                string trend     = price > basePrice * 1.3 ? "↑" : price < basePrice * 0.7 ? "↓" : "─";
+                
+                // Opción para la consola: solo mostrar si hay stock, demanda histórica o si es vainilla (para no saturar).
+                // Pero como es dinámico, mostramos todo lo que haya en el mercado.
+                Console.WriteLine($"      {Loc.Good(goodId),-16} Stock:{stock,8:N1}  {price,6:N2}¤ {trend}");
             }
         }
 
+        // ── Debug overlay ─────────────────────────────────────────────────────
+        if (Config.DebugMode && GameLogger.Recent.Count > 0)
+        {
+            Console.WriteLine("\n  ── Debug Log ──────────────────────────────────────────────");
+            var lines = GameLogger.Recent.TakeLast(Config.DebugLogLines);
+            foreach (var entry in lines)
+                Console.WriteLine($"  {entry.ShortDisplay}");
+        }
+
         Console.WriteLine("\n──────────────────────────────────────────────────────────────");
-        Console.WriteLine("  [Tab] Pausa  [1-5] Velocidad  [Esc] Salir");
+        Console.WriteLine($"  {Loc.UI("controls")}  [L] {Loc.CurrentLanguage.ToUpper()}  [F5] Guardar  [F9] Cargar");
     }
 
     private static string BuildBar(float value, int width)
     {
-        int filled = (int)Math.Round(value * width);
-        filled = Math.Clamp(filled, 0, width);
+        int filled = Math.Clamp((int)Math.Round(value * width), 0, width);
         return new string('█', filled) + new string('░', width - filled);
     }
 }

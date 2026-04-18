@@ -7,7 +7,7 @@ namespace Engine.Models;
 public class NeedFulfillment
 {
     public long Tick { get; init; }
-    public GoodType Good { get; init; }
+    public string  Good { get; init; } = "";   // string good ID, ej. "grain"
     public NeedTier Tier { get; init; }
     public double Required { get; init; }
     public double Fulfilled { get; init; }
