@@ -7,6 +7,14 @@
 .godot/
 export_presets.cfg
 
+# Simulation-specific ignores
+saves/*
+!saves/.gitkeep
+logs/*
+!logs/.gitkeep
+mods/*
+!mods/.gitkeep
+
 # dotenv files
 .env
 
