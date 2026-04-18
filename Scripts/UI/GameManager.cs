@@ -21,7 +21,7 @@ public partial class GameManager : Node
         // En Godot, los archivos de datos están en res://Engine/
         // Sin embargo, para que las librerías de C# estándar funcionen,
         // a veces necesitamos rutas absolutas.
-        string enginePath = ProjectSettings.GlobalizePath("res://Engine");
+        string enginePath = ProjectSettings.GlobalizePath("res://");
 
         try 
         {

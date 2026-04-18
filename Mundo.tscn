@@ -1,0 +1,83 @@
+[gd_scene format=3 uid="uid://dltqk5oxvaoos"]
+
+[ext_resource type="Script" uid="uid://dgbfpfrt7tp7p" path="res://Scripts/UI/MapManager.cs" id="1_xywc0"]
+[ext_resource type="Script" uid="uid://gos17crquxl6" path="res://Scripts/UI/GameManager.cs" id="2_gejyx"]
+[ext_resource type="Script" uid="uid://cnw1y23ykhrtf" path="res://Scripts/UI/MainUI.cs" id="3_5yunf"]
+[ext_resource type="Script" uid="uid://ecm0xdjfxpe3" path="res://Scripts/View/CamaraEstrategia.cs" id="4_cam"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_m0ccj"]
+albedo_color = Color(0, 0.5529412, 1, 1)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_vnl4w"]
+material = SubResource("StandardMaterial3D_m0ccj")
+size = Vector2(100, 100)
+
+[sub_resource type="BoxMesh" id="BoxMesh_ncxn7"]
+size = Vector3(5, 1, 10)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_rd1lh"]
+albedo_color = Color(0.2627451, 0.6745098, 0, 1)
+
+[node name="Mundo" type="Node3D" unique_id=278797875]
+
+[node name="Oceano" type="MeshInstance3D" parent="." unique_id=1963528784]
+mesh = SubResource("PlaneMesh_vnl4w")
+
+[node name="Provincia_1" type="MeshInstance3D" parent="." unique_id=2071217562]
+mesh = SubResource("BoxMesh_ncxn7")
+surface_material_override/0 = SubResource("StandardMaterial3D_rd1lh")
+
+[node name="Provincia_2" type="MeshInstance3D" parent="." unique_id=1244219767]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.941038, 0, 0)
+mesh = SubResource("BoxMesh_ncxn7")
+surface_material_override/0 = SubResource("StandardMaterial3D_rd1lh")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=648388408]
+transform = Transform3D(-0.95629793, -0.2744177, 0.10094154, -0.004320504, 0.35844848, 0.9335395, -0.29236206, 0.89230573, -0.34396914, 0, 15.979467, 0)
+
+[node name="Camera3D" type="Camera3D" parent="." unique_id=2143344569]
+transform = Transform3D(1, 0, 0, 0, 0.70710677, 0.70710677, 0, -0.70710677, 0.70710677, 0, 10, 10)
+script = ExtResource("4_cam")
+
+[node name="MapManager" type="Node" parent="." unique_id=1889976804]
+script = ExtResource("1_xywc0")
+
+[node name="GameManager" type="Node" parent="." unique_id=1641782040]
+script = ExtResource("2_gejyx")
+
+[node name="UI" type="Control" parent="." unique_id=870660727]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("3_5yunf")
+
+[node name="MarginContainer" type="MarginContainer" parent="UI" unique_id=984531636]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="VBoxContainer" type="VBoxContainer" parent="UI/MarginContainer" unique_id=1388391507]
+layout_mode = 2
+
+[node name="DateLabel" type="Label" parent="UI/MarginContainer/VBoxContainer" unique_id=902132804]
+layout_mode = 2
+text = "📅 Carga..."
+
+[node name="PopLabel" type="Label" parent="UI/MarginContainer/VBoxContainer" unique_id=620553783]
+layout_mode = 2
+text = "👥 Población: 0"
+
+[node name="StatusLabel" type="Label" parent="UI/MarginContainer/VBoxContainer" unique_id=1059110301]
+layout_mode = 2
+text = "Esperando motor..."
