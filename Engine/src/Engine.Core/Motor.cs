@@ -33,12 +33,53 @@ public class Motor
     private const int StatusDuration = 3;
     public string StatusMessage => _statusTicksLeft > 0 ? _statusMessage : "";
 
+    public GameContext Context => _context;
+    public bool IsPaused { get => _isPaused; set => _isPaused = value; }
+    public int TimeScale { get => _timeScale; set => _timeScale = value; }
+
     public Motor(GameContext context, List<ISystem> systems, string baseFolder)
     {
         _context     = context;
         _systems     = systems;
         _savesFolder = Path.Combine(baseFolder, "saves");
         _logsFolder  = Path.Combine(baseFolder, "logs");
+    }
+
+    public void Initialize()
+    {
+        // Inicializar logger con el nivel configurado
+        GameLogger.Initialize(_logsFolder, Config.LogLevel);
+        GameLogger.Info("Motor", $"Simulación iniciada. Idioma: {Config.Language}, Debug: {Config.DebugMode}");
+
+        // Registrar suscripciones al EventBus para logging automático de eventos de juego
+        RegisterEventLogging();
+
+        _timeScale = Config.DefaultTimeScale;
+    }
+
+    public void Tick()
+    {
+        if (!_isRunning) return;
+
+        // Actualizar fecha de juego
+        _context.CurrentDate = GameCalendar.FromTick(_currentTick);
+        _context.CurrentTick = _currentTick;
+        _context.TimeScale   = _timeScale;
+        _context.IsPaused    = _isPaused;
+
+        // Publicar eventos de calendario
+        PublishCalendarEvents(_context.CurrentDate);
+
+        if (!_isPaused)
+        {
+            UpdateWorld();
+            _currentTick++;
+            if (_statusTicksLeft > 0) _statusTicksLeft--;
+        }
+        else
+        {
+            if (_statusTicksLeft > 0) _statusTicksLeft--;
+        }
     }
 
     public void Start()

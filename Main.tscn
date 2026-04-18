@@ -1,0 +1,57 @@
+[gd_scene format=3 uid="uid://b8x2q4v5r1e"]
+
+[ext_resource type="Script" uid="uid://cxpffc2yclwhj" path="res://Src/GameManager.cs" id="1_gm"]
+[ext_resource type="Script" uid="uid://c5r17sina7ul8" path="res://Src/MainUI.cs" id="2_ui"]
+
+[node name="Main" type="Node2D" unique_id=1009613372]
+position = Vector2(177, 105)
+
+[node name="GameManager" type="Node" parent="." unique_id=1519547843]
+script = ExtResource("1_gm")
+
+[node name="UI" type="Control" parent="." unique_id=1858774262]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("2_ui")
+
+[node name="MarginContainer" type="MarginContainer" parent="UI" unique_id=1590939908]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="VBoxContainer" type="VBoxContainer" parent="UI/MarginContainer" unique_id=1090522713]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="UI/MarginContainer/VBoxContainer" unique_id=333669759]
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "Project PLVS VLTRA"
+
+[node name="HSeparator" type="HSeparator" parent="UI/MarginContainer/VBoxContainer" unique_id=1695355575]
+layout_mode = 2
+
+[node name="DateLabel" type="Label" parent="UI/MarginContainer/VBoxContainer" unique_id=80736620]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "📅 Carga..."
+
+[node name="PopLabel" type="Label" parent="UI/MarginContainer/VBoxContainer" unique_id=1076580885]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "👥 Población: 0"
+
+[node name="StatusLabel" type="Label" parent="UI/MarginContainer/VBoxContainer" unique_id=2086833101]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Esperando motor..."
