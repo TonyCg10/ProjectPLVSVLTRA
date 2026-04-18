@@ -2,6 +2,13 @@
   {
     "id": "tarsis",
     "nameKey": "province.tarsis",
-    "regionKey": "region.costa_sur"
+    "regionKey": "region.costa_sur",
+    "countryId": "republica_sur"
+  },
+  {
+    "id": "elysium",
+    "nameKey": "province.elysium",
+    "regionKey": "region.costa_sur",
+    "countryId": "republica_sur"
   }
 ]

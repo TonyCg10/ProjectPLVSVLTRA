@@ -1,5 +1,7 @@
 {
   "province.tarsis": "Tarsis",
+  "province.elysium": "Elysium",
+  "country.republica_sur": "Southern Republic",
   "region.costa_sur": "Southern Coast",
   "pop.type.Peasants": "Peasants",
   "pop.type.Workers": "Workers",
@@ -31,6 +33,8 @@
   "slot.tarsis_port": "Tarsis Port",
   "slot.tarsis_guild": "Guild Workshops",
   "slot.tarsis_textile": "Tarsis Textile Mill",
+  "slot.elysium_farm": "Elysium Fields",
+  "slot.elysium_well": "Elysium Well",
   "ui.day": "DAY",
   "ui.paused": "PAUSED",
   "ui.simulating": "SIMULATING",

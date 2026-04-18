@@ -61,6 +61,34 @@ public class EmploymentSlot
             }
         }
 
+        // 1.5 Decisión Estratégica: ¿Es rentable producir hoy?
+        double potentialRevenue = 0;
+        foreach (var o in Definition.Outputs) potentialRevenue += o.Amount * market.GetPrice(o.Good);
+        
+        double currentInputCost = 0;
+        foreach (var i in Definition.Inputs) currentInputCost += i.Amount * market.GetPrice(i.Good);
+
+        // A. Bloqueo por Saturación Crítica: Si hay stock para meses, paramos todo
+        bool isGloballySaturated = false;
+        foreach (var o in Definition.Outputs)
+        {
+            var stack = market.GetStack(o.Good);
+            if (stack == null) continue;
+            
+            double target = Math.Max(100, stack.DailyDemand * 7);
+            if (stack.Available > target * 10) isGloballySaturated = true;
+        }
+
+        if (isGloballySaturated)
+        {
+            operationsToRun = 0;
+        }
+        // B. Recorte por baja rentabilidad
+        else if (potentialRevenue < currentInputCost * 1.1)
+        {
+            operationsToRun *= 0.3;
+        }
+
         if (operationsToRun <= 0 && Definition.Inputs.Count > 0)
         {
             return; // No hay materias primas para trabajar

@@ -245,11 +245,21 @@ public class PopSystem : ISystem
             if (pop.Size <= 0) continue;
 
             // Fertilidad: emerge de HealthIndex sostenido
-            // Multiplicamos masivamente las tasas para que la población explote en abundancia
             double fertilityBase  = 0.01; // 1% base al mes
-            double fertilityBonus = pop.HealthIndex * 0.04; // Hasta 4% extra si tienen 100% salud
-            double mortalityBase  = 0.005; // 0.5% base
-            double mortalityExtra = (1.0 - pop.HealthIndex) * 0.05; // Mortalidad alta por mala salud
+            double fertilityBonus = pop.HealthIndex * 0.03; 
+            
+            // Mortalidad: drástica por debajo del 70% de salud
+            double mortalityBase  = 0.005; 
+            double mortalityExtra = 0;
+            if (pop.HealthIndex < 0.7f)
+            {
+                // Curva exponencial: a 40% de salud, la mortalidad extra es ~15% mensual
+                mortalityExtra = Math.Pow(0.7 - pop.HealthIndex, 2) * 1.5;
+            }
+            else
+            {
+                mortalityExtra = (1.0 - pop.HealthIndex) * 0.01;
+            }
 
             double growthRate = (fertilityBase + fertilityBonus) - (mortalityBase + mortalityExtra);
             int delta         = (int)(pop.Size * growthRate);
@@ -298,13 +308,53 @@ public class PopSystem : ISystem
 
             double survivalRatio = GetTierRatio(pf, NeedTier.Survival);
 
-            bool isStarving = survivalRatio < 0.8 && pop.Savings < 100;
+            bool isStarving = survivalRatio < 0.8 && pop.Savings < 500;
             bool isBankruptFactory = pop.CurrentEmployment.DailyProfit <= 0;
 
-            if (isStarving || isBankruptFactory)
+            bool isSaturated = false;
+            var outputs = pop.CurrentEmployment.Definition.Outputs;
+            if (outputs.Count > 0)
             {
-                // El 10% del grupo dimite por desesperación buscando un trabajo mejor
-                int quitters = pop.EmployedCount / 10;
+                string mainGood = outputs[0].Good;
+                double stock = province.Market.GetStock(mainGood);
+                double price = province.Market.GetPrice(mainGood);
+                double basePrice = GameRegistry.GetBasePrice(mainGood);
+                isSaturated = stock > 50000 && price <= basePrice * 0.5;
+            }
+
+            // 4. Arbitraje Salarial (Mejores oportunidades)
+            bool foundBetterJob = false;
+            var currentWage = pop.CurrentEmployment.DailyProfit / Math.Max(1, pop.CurrentEmployment.AssignedCount);
+            
+            // Buscar si hay algún slot que pague un 30% más y tenga sitio
+            var betterSlot = province.EmploymentSlots
+                .Where(s => s.AssignedCount < s.Capacity && (s.AcceptedTypes.Count == 0 || s.AcceptedTypes.Contains(pop.Type)))
+                .OrderByDescending(s => s.DailyProfit / Math.Max(1, s.AssignedCount))
+                .FirstOrDefault();
+
+            if (betterSlot != null && betterSlot != pop.CurrentEmployment)
+            {
+                var betterWage = betterSlot.DailyProfit / Math.Max(1, betterSlot.AssignedCount);
+                if (betterWage > currentWage * 1.3 && betterWage > 5.0) // Solo si pagan un 30% más y el sueldo es digno
+                {
+                    foundBetterJob = true;
+                }
+            }
+
+            if (isStarving || isBankruptFactory || isSaturated || foundBetterJob)
+            {
+                // Tasa de dimisión dinámica: más agresiva si han encontrado algo mucho mejor o el sector está muerto
+                double quitRate = 0.1;
+
+                // Si hay stock masivo (Saturation Crítica), el éxodo es total
+                if (isSaturated) quitRate = 0.5; 
+                else if (foundBetterJob)
+                {
+                    var betterWage = betterSlot!.DailyProfit / Math.Max(1, betterSlot.AssignedCount);
+                    if (betterWage > currentWage * 2.0) quitRate = 0.3;
+                }
+
+                int quitters = (int)(pop.EmployedCount * quitRate);
                 if (quitters > 0)
                 {
                     pop.EmployedCount -= quitters;
@@ -333,7 +383,23 @@ public class PopSystem : ISystem
             }
         }
 
-        province.Pops.AddRange(newUnemployedPops);
+        foreach (var quitPop in newUnemployedPops)
+        {
+            var target = province.Pops.FirstOrDefault(p => 
+                p.Type == quitPop.Type && 
+                p.Culture == quitPop.Culture && 
+                p.Religion == quitPop.Religion &&
+                p.CurrentEmployment == null);
+
+            if (target != null)
+            {
+                target.Combine(quitPop);
+            }
+            else
+            {
+                province.Pops.Add(quitPop);
+            }
+        }
     }
 
     // ============================================================
@@ -341,16 +407,49 @@ public class PopSystem : ISystem
     // ============================================================
     private static void SocialMobilityPhase(Province province, long currentTick)
     {
-        // Solo evaluar cada 90 días para no ser costoso
-        if (currentTick % 90 != 0) return;
+        // Evaluar cada 30 días para mayor dinamismo
+        if (currentTick % 30 != 0) return;
 
         var newPops    = new List<PopGroup>();
         var removePops = new List<PopGroup>();
 
         foreach (var pop in province.Pops)
         {
-            // Peasants con alta Literacy + Savings → se convierten en Artisans
-            if (pop.Type == PopTypes.Peasants && pop.Literacy > 0.3f && pop.WealthTier >= 2)
+            // 1. Peasants -> Workers (Industrialización)
+            // Campesinos desempleados o que ven que en la industria se gana más.
+            if (pop.Type == PopTypes.Peasants && pop.WealthTier >= 1)
+            {
+                // Si hay huecos industriales libres en la provincia
+                int industrialVacancies = province.EmploymentSlots
+                    .Where(s => s.Type != "well" && s.Type != "farm")
+                    .Sum(s => s.Capacity - s.AssignedCount);
+
+                if (industrialVacancies > 0)
+                {
+                    int migrating = Math.Min(pop.Size / 10, industrialVacancies);
+                    if (migrating > 0)
+                    {
+                        pop.Size -= migrating;
+                        double savingsTransferred = (pop.Savings / (pop.Size + migrating)) * migrating;
+                        pop.Savings -= savingsTransferred;
+
+                        newPops.Add(new PopGroup(PopTypes.Workers, pop.Culture, pop.Religion, migrating, savingsTransferred)
+                        {
+                            HealthIndex    = pop.HealthIndex,
+                            Literacy       = pop.Literacy,
+                            Militancy      = pop.Militancy,
+                            Consciousness  = pop.Consciousness,
+                            SocialCohesion = pop.SocialCohesion
+                        });
+                        EventBus.Publish(new PopMobilityEvent(province, PopTypes.Peasants, PopTypes.Workers, migrating));
+                        GameLogger.Info("PopSystem", $"Urbanización en {province.Id}: {migrating} Campesinos -> Trabajadores");
+                    }
+                }
+            }
+
+            // 2. Peasants/Workers -> Artisans (Por Literacy O Riqueza extrema)
+            if ((pop.Type == PopTypes.Peasants || pop.Type == PopTypes.Workers) && 
+                (pop.Literacy > 0.3f || pop.WealthTier >= 4))
             {
                 int migrating = pop.Size / 20;
                 if (migrating > 0)
@@ -367,13 +466,13 @@ public class PopSystem : ISystem
                         Consciousness  = pop.Consciousness,
                         SocialCohesion = pop.SocialCohesion
                     });
-                    EventBus.Publish(new PopMobilityEvent(province, PopTypes.Peasants, PopTypes.Artisans, migrating));
-                    GameLogger.Info("PopSystem", $"Movilidad social en {province.Id}: {migrating} Campesinos → Artesanos");
+                    EventBus.Publish(new PopMobilityEvent(province, pop.Type, PopTypes.Artisans, migrating));
+                    GameLogger.Info("PopSystem", $"Movilidad social en {province.Id}: {migrating} {pop.Type} -> Artesanos");
                 }
             }
 
-            // Workers con altos Savings → se convierten en Merchants
-            if (pop.Type == PopTypes.Workers && pop.WealthTier >= 3)
+            // 3. Artisans/Workers -> Merchants (Por Riqueza extrema)
+            if ((pop.Type == PopTypes.Artisans || pop.Type == PopTypes.Workers) && pop.WealthTier >= 4)
             {
                 int migrating = pop.Size / 30;
                 if (migrating > 0)
@@ -390,16 +489,96 @@ public class PopSystem : ISystem
                         Consciousness  = pop.Consciousness,
                         SocialCohesion = pop.SocialCohesion
                     });
-                    EventBus.Publish(new PopMobilityEvent(province, PopTypes.Workers, PopTypes.Merchants, migrating));
-                    GameLogger.Info("PopSystem", $"Movilidad social en {province.Id}: {migrating} Trabajadores → Mercaderes");
+                    EventBus.Publish(new PopMobilityEvent(province, pop.Type, PopTypes.Merchants, migrating));
+                    GameLogger.Info("PopSystem", $"Movilidad social en {province.Id}: {migrating} {pop.Type} -> Mercaderes");
+                }
+            }
+
+            // 4. MOVILIDAD DESCENDENTE (Ruina y Proletarización)
+            // Si pasan hambre o pierden sus ahorros, caen de clase.
+            double survivalHist = pop.GetAverageFulfillment(NeedTier.Survival, 7);
+            
+            // Lógica de Crisis: Si no hay stock en el mercado, el pánico es mayor
+            bool hasGrain = province.Market.GetStock("grain") > 10;
+            bool hasWater = province.Market.GetStock("water") > 10;
+            double hungerThreshold = (!hasGrain || !hasWater) ? 0.8 : 0.5;
+
+            bool isStarving = survivalHist < hungerThreshold;
+            bool isBroke    = pop.WealthTier <= 1;
+
+            if (isStarving || isBroke)
+            {
+                string? targetType = pop.Type switch
+                {
+                    PopTypes.Merchants => PopTypes.Artisans,
+                    PopTypes.Artisans  => PopTypes.Workers,
+                    PopTypes.Workers   => PopTypes.Peasants,
+                    _ => null
+                };
+
+                if (targetType != null)
+                {
+                    // La caída es más rápida que el ascenso en crisis: 20% del grupo cae por mes
+                    int falling = Math.Max(1, pop.Size / 5); 
+                    pop.Size -= falling;
+                    double savingsTransferred = (pop.Savings / (pop.Size + falling)) * falling;
+                    pop.Savings -= savingsTransferred;
+
+                    // IMPORTANTE: Si el pop original se queda sin gente, liberar su empleo
+                    if (pop.Size <= 0 && pop.CurrentEmployment != null)
+                    {
+                        pop.CurrentEmployment.AssignedPop = null;
+                        pop.CurrentEmployment.AssignedCount = 0;
+                        pop.CurrentEmployment = null;
+                    }
+
+                    newPops.Add(new PopGroup(targetType, pop.Culture, pop.Religion, falling, savingsTransferred)
+                    {
+                        HealthIndex    = pop.HealthIndex,
+                        Literacy       = pop.Literacy,
+                        Militancy      = pop.Militancy + 0.1f, // Caer de clase genera resentimiento
+                        Consciousness  = pop.Consciousness,
+                        SocialCohesion = pop.SocialCohesion * 0.9f
+                    });
+
+                    EventBus.Publish(new PopMobilityEvent(province, pop.Type, targetType, falling));
+                    GameLogger.Warning("PopSystem", $"RUINA en {province.Id}: {falling} {pop.Type} -> {targetType} (Hambre/Pobreza)");
                 }
             }
 
             if (pop.Size <= 0) removePops.Add(pop);
         }
 
+        foreach (var dead in removePops)
+        {
+            if (dead.CurrentEmployment != null)
+            {
+                dead.CurrentEmployment.AssignedPop = null;
+                dead.CurrentEmployment.AssignedCount = 0;
+                dead.CurrentEmployment = null;
+            }
+        }
+
         province.Pops.RemoveAll(p => removePops.Contains(p));
-        province.Pops.AddRange(newPops);
+
+        foreach (var newPop in newPops)
+        {
+            // Intentar fusionar con un pop existente idéntico
+            var target = province.Pops.FirstOrDefault(p => 
+                p.Type == newPop.Type && 
+                p.Culture == newPop.Culture && 
+                p.Religion == newPop.Religion &&
+                p.CurrentEmployment == null); // Solo fusionar desempleados
+
+            if (target != null)
+            {
+                target.Combine(newPop);
+            }
+            else
+            {
+                province.Pops.Add(newPop);
+            }
+        }
     }
 
     // ============================================================

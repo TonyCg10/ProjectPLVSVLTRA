@@ -27,3 +27,4 @@
 /run/media/toni/6EF68777F6873DF9/LINUX/CODE/ProjectPLVSVLTRA/Engine/bin/Debug/net9.0/MoonSharp.Interpreter.dll
 /run/media/toni/6EF68777F6873DF9/LINUX/CODE/ProjectPLVSVLTRA/Engine/obj/Debug/net9.0/Engine.csproj.AssemblyReference.cache
 /run/media/toni/6EF68777F6873DF9/LINUX/CODE/ProjectPLVSVLTRA/Engine/obj/Debug/net9.0/Engine.csproj.Up2Date
+/run/media/toni/6EF68777F6873DF9/LINUX/CODE/ProjectPLVSVLTRA/Engine/bin/Debug/net9.0/data/countries.json

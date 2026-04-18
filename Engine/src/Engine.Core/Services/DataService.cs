@@ -10,6 +10,7 @@ namespace Engine.Services;
 /// Orden de carga:
 ///   1. GameRegistry (definitions) — debe estar cargado antes que cualquier otra cosa
 ///   2. localization/{lang}.json
+///   2.5 data/countries.json
 ///   3. data/provinces.json
 ///   4. data/pops.json
 ///   5. data/employment_slots.json
@@ -50,6 +51,16 @@ public static class DataService
         // 2. Localización
         Loc.Load(locFolder, context.Language);
 
+        // 2.5 Países (Countries)
+        var countries = LoadJson<List<CountryDto>>(Path.Combine(dataFolder, "countries.json")) ?? new();
+        var countryMap = new Dictionary<string, Country>();
+        foreach (var dto in countries)
+        {
+            var c = new Country(dto.Id, dto.NameKey);
+            countryMap[dto.Id] = c;
+            context.Countries.Add(c);
+        }
+
         // 3. Provincias (shells)
         var provinces = LoadJson<List<ProvinceDto>>(Path.Combine(dataFolder, "provinces.json")) ?? new();
         var provinceMap = new Dictionary<string, Province>();
@@ -57,6 +68,13 @@ public static class DataService
         {
             var p = new Province(dto.Id, dto.NameKey, dto.RegionKey);
             p.Market.InitializeFromRegistry();   // inicializa stacks desde registry
+            
+            if (!string.IsNullOrEmpty(dto.CountryId) && countryMap.TryGetValue(dto.CountryId, out var owner))
+            {
+                p.Owner = owner;
+                owner.Provinces.Add(p);
+            }
+
             provinceMap[dto.Id] = p;
             context.Provinces.Add(p);
         }
@@ -164,6 +182,13 @@ public static class DataService
         public string Id        { get; set; } = "";
         public string NameKey   { get; set; } = "";
         public string RegionKey { get; set; } = "";
+        public string CountryId { get; set; } = "";
+    }
+
+    private class CountryDto
+    {
+        public string Id { get; set; } = "";
+        public string NameKey { get; set; } = "";
     }
 
     private class PopDto

@@ -40,17 +40,22 @@ public class MarketStack
 
     public void RecalculatePrice()
     {
-        if (DailyDemand <= 0)
-        {
-            CurrentPrice = CurrentPrice * 0.95 + BasePrice * 0.05;
-        }
-        else
-        {
-            double ratio       = DailySupply / DailyDemand;
-            double targetPrice = BasePrice / Math.Max(0.1, ratio);
-            CurrentPrice       = CurrentPrice * 0.9 + targetPrice * 0.1;
-            CurrentPrice       = Math.Clamp(CurrentPrice, BasePrice * 0.5, BasePrice * 4.0);
-        }
+        // 1. Depreciación de Stock (Spoilage / Almacenaje)
+        // El 1% del stock se pierde diariamente por deterioro o costes de mantenimiento.
+        Available *= 0.99;
+
+        // 2. Calcular Demanda Esperada (Suavizada) para definir el Stock Objetivo
+        double targetStock = Math.Max(100, DailyDemand * 7); 
+        
+        // 3. Modelo de Escasez Relativa
+        double scarcityRatio = targetStock / Math.Max(1.0, Available);
+        double targetPrice = BasePrice * Math.Sqrt(scarcityRatio);
+        
+        // 4. Suavizado
+        CurrentPrice = CurrentPrice * 0.7 + targetPrice * 0.3;
+        
+        // Límites de seguridad (permitimos caídas más bajas para desincentivar la sobreproducción)
+        CurrentPrice = Math.Clamp(CurrentPrice, BasePrice * 0.1, BasePrice * 10.0);
 
         DailyDemand = 0;
         DailySupply = 0;

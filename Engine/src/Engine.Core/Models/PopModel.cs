@@ -88,4 +88,35 @@ public class PopGroup
             JobExperience[slotType] = Math.Min(maxExp, current + amount);
         }
     }
+
+    /// <summary>
+    /// Fusiona otro PopGroup en este, promediando sus atributos según el peso (tamaño).
+    /// </summary>
+    public void Combine(PopGroup other)
+    {
+        if (other.Size <= 0) return;
+
+        double totalSize = (double)Size + other.Size;
+        double w1 = Size / totalSize;
+        double w2 = other.Size / totalSize;
+
+        HealthIndex    = (float)(HealthIndex * w1 + other.HealthIndex * w2);
+        Literacy       = (float)(Literacy * w1 + other.Literacy * w2);
+        Militancy      = (float)(Militancy * w1 + other.Militancy * w2);
+        Consciousness  = (float)(Consciousness * w1 + other.Consciousness * w2);
+        Radicalism     = (float)(Radicalism * w1 + other.Radicalism * w2);
+        SocialCohesion = (float)(SocialCohesion * w1 + other.SocialCohesion * w2);
+
+        Savings += other.Savings;
+        Size    += other.Size;
+
+        // Fusionar experiencia (promediada)
+        foreach (var kv in other.JobExperience)
+        {
+            float exp1 = GetExperience(kv.Key);
+            JobExperience[kv.Key] = (float)(exp1 * w1 + kv.Value * w2);
+        }
+
+        RecalculateWealthTier();
+    }
 }

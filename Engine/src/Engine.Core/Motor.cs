@@ -152,7 +152,7 @@ public class Motor
             case ConsoleKey.D3:     _timeScale = 3; break;
             case ConsoleKey.D4:     _timeScale = 4; break;
             case ConsoleKey.D5:     _timeScale = 5; break;
-            case ConsoleKey.D0:     _timeScale = 30; break; // Debug mode (x30)
+            case ConsoleKey.D0:     _timeScale = 60; break; // Debug mode (x60)
             case ConsoleKey.L:      CycleLanguage(); break;
             case ConsoleKey.F5:     SaveGame(); break;
             case ConsoleKey.F9:     LoadGame(); break;

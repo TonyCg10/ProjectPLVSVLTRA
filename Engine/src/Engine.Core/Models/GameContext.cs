@@ -2,6 +2,7 @@ namespace Engine.Models;
 
 public class GameContext
 {
+    public List<Country> Countries { get; set; } = new();
     public List<Province> Provinces { get; set; } = new();
 
     /// <summary>Código de idioma activo, ej. "es" o "en".</summary>

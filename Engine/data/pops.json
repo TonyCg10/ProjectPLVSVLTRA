@@ -37,5 +37,18 @@
     "militancy": 0.02,
     "consciousness": 0.3,
     "socialCohesion": 0.95
+  },
+  {
+    "provinceId": "elysium",
+    "type": "peasants",
+    "culture": "tarsiano",
+    "religion": "solaris",
+    "size": 3000,
+    "savings": 50.0,
+    "healthIndex": 0.6,
+    "literacy": 0.05,
+    "militancy": 0.05,
+    "consciousness": 0.05,
+    "socialCohesion": 0.9
   }
 ]

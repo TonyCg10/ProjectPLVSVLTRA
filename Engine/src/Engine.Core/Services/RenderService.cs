@@ -21,12 +21,17 @@ public static class RenderService
             Console.WriteLine($"  {statusMessage}");
         Console.WriteLine("══════════════════════════════════════════════════════════════");
 
-        foreach (var province in context.Provinces)
+        foreach (var country in context.Countries)
         {
-            string provinceName = Loc.Get(province.NameKey);
-            string regionName   = Loc.Get(province.RegionKey);
+            string countryName = Loc.Get(country.NameKey);
+            Console.WriteLine($"\n  ♚ País: {countryName}  — Población Total: {country.TotalPopulation:N0}");
 
-            Console.WriteLine($"\n  ▸ {provinceName} [{regionName}]  — {province.TotalPopulation:N0}");
+            foreach (var province in country.Provinces)
+            {
+                string provinceName = Loc.Get(province.NameKey);
+                string regionName   = Loc.Get(province.RegionKey);
+
+                Console.WriteLine($"\n    ▸ Provincia: {provinceName} [{regionName}]  — {province.TotalPopulation:N0}");
 
             foreach (var pop in province.Pops)
             {
@@ -83,7 +88,7 @@ public static class RenderService
                 }
             }
         }
-
+        }
         // ── Debug overlay ─────────────────────────────────────────────────────
         if (Config.DebugMode && GameLogger.Recent.Count > 0)
         {

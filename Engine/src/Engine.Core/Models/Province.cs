@@ -8,6 +8,8 @@ public class Province
     /// <summary>Clave de localización, ej. "region.costa_sur". Resolver con Loc.Region(RegionKey).</summary>
     public string RegionKey { get; set; } = "";
 
+    public Country? Owner { get; set; }
+
     public List<PopGroup>        Pops             { get; set; } = new();
     public List<EmploymentSlot>  EmploymentSlots  { get; set; } = new();
     public LocalMarket           Market           { get; set; } = new();

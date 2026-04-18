@@ -84,5 +84,25 @@
     "acceptedTypes": ["merchants"],
     "assignedPopType": "merchants",
     "assignedCount": 400
+  },
+  {
+    "provinceId": "elysium",
+    "id": "elysium_well",
+    "nameKey": "slot.elysium_well",
+    "type": "well",
+    "capacity": 1500,
+    "acceptedTypes": ["peasants"],
+    "assignedPopType": "peasants",
+    "assignedCount": 500
+  },
+  {
+    "provinceId": "elysium",
+    "id": "elysium_farm",
+    "nameKey": "slot.elysium_farm",
+    "type": "farm",
+    "capacity": 3000,
+    "acceptedTypes": ["peasants"],
+    "assignedPopType": "peasants",
+    "assignedCount": 1500
   }
 ]

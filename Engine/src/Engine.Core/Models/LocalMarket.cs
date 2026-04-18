@@ -39,6 +39,18 @@ public class LocalMarket
         }
     }
 
+    public void AddStock(string good, double quantity) => AddSupply(good, quantity);
+
+    public void RemoveStock(string good, double quantity)
+    {
+        if (Stacks.TryGetValue(good, out var stack))
+        {
+            stack.Available = Math.Max(0, stack.Available - quantity);
+        }
+    }
+
+
+
     public void EndOfDayPriceUpdate()
     {
         foreach (var stack in Stacks.Values)
@@ -47,4 +59,5 @@ public class LocalMarket
 
     public double GetPrice(string good) => Stacks.TryGetValue(good, out var s) ? s.CurrentPrice : 0;
     public double GetStock(string good) => Stacks.TryGetValue(good, out var s) ? s.Available   : 0;
+    public MarketStack? GetStack(string good) => Stacks.TryGetValue(good, out var s) ? s : null;
 }

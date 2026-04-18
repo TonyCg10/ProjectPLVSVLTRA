@@ -2,7 +2,7 @@
   { 
     "id": "farm", 
     "inputs": [ { "good": "water", "amount": 0.002 }, { "good": "tools", "amount": 0.0001 } ], 
-    "outputs": [ { "good": "grain", "amount": 0.008 } ] 
+    "outputs": [ { "good": "grain", "amount": 0.012 } ] 
   },
   { 
     "id": "fishery", 
@@ -24,10 +24,10 @@
     "inputs": [],
     "outputs": [ { "good": "tools", "amount": 0.003 } ]
   },
-  {
-    "id": "well",
-    "inputs": [],
-    "outputs": [ { "good": "water", "amount": 0.05 } ]
+  { 
+    "id": "well", 
+    "inputs": [], 
+    "outputs": [ { "good": "water", "amount": 0.01 } ] 
   },
   { 
     "id": "apothecary",
