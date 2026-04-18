@@ -3,6 +3,10 @@
 ##
 ## Get latest from `dotnet new gitignore`
 
+# Godot-specific ignores
+.godot/
+export_presets.cfg
+
 # dotenv files
 .env
 
