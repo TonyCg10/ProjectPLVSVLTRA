@@ -13,3 +13,4 @@
 /run/media/toni/6EF68777F6873DF9/LINUX/CODE/ProjectPLVSVLTRA/Engine/obj/Debug/net9.0/Engine.genruntimeconfig.cache
 /run/media/toni/6EF68777F6873DF9/LINUX/CODE/ProjectPLVSVLTRA/Engine/obj/Debug/net9.0/ref/Engine.dll
 /run/media/toni/6EF68777F6873DF9/LINUX/CODE/ProjectPLVSVLTRA/Engine/bin/Debug/net9.0/data/provinces.json
+/run/media/toni/6EF68777F6873DF9/LINUX/CODE/ProjectPLVSVLTRA/Engine/obj/Debug/net9.0/Engine.sourcelink.json
