@@ -33,12 +33,28 @@ public record PopTypeDefinition
 }
 
 /// <summary>
+/// Representa una cantidad de un bien específico.
+/// </summary>
+public record ResourceAmount
+{
+    public string Good   { get; init; } = "";
+    public double Amount { get; init; }
+}
+
+/// <summary>
 /// Definición de un tipo de slot de empleo cargada desde data/definitions/slot_types.json.
+/// Ahora soporta cadenas de producción mediante Inputs y Outputs.
 /// </summary>
 public record SlotTypeDefinition
 {
     public string Id      { get; init; } = "";
     public string NameKey { get; init; } = "";
+
+    /// <summary>Bienes consumidos por trabajador al día.</summary>
+    public List<ResourceAmount> Inputs  { get; init; } = new();
+    
+    /// <summary>Bienes producidos por trabajador al día.</summary>
+    public List<ResourceAmount> Outputs { get; init; } = new();
 
     public string ResolvedNameKey => string.IsNullOrEmpty(NameKey) ? $"slot_type.{Id}" : NameKey;
 }

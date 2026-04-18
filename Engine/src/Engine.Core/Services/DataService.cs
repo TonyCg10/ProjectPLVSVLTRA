@@ -44,6 +44,9 @@ public static class DataService
         string modsFolder = Path.Combine(baseFolder, "mods");
         ModManager.Initialize(modsFolder);
 
+        // 1.6 Calcular Precios Base usando la Teoría del Valor Trabajo (LTV)
+        Engine.Systems.ValueCalculationSystem.CalculateBasePrices();
+
         // 2. Localización
         Loc.Load(locFolder, context.Language);
 
@@ -86,22 +89,49 @@ public static class DataService
                 Id                      = dto.Id,
                 NameKey                 = dto.NameKey,
                 Type                    = dto.Type,
-                GoodProduced            = dto.GoodProduced,
-                BaseProductionPerWorker = dto.BaseProductionPerWorker,
                 Capacity                = dto.Capacity,
                 AcceptedTypes           = dto.AcceptedTypes.ToHashSet()
             };
 
             if (!string.IsNullOrEmpty(dto.AssignedPopType))
             {
-                var assignedPop = province.Pops.FirstOrDefault(p => p.Type == dto.AssignedPopType);
+                // Buscar un pop de este tipo que tenga gente libre (desempleada)
+                var assignedPop = province.Pops.FirstOrDefault(p => p.Type == dto.AssignedPopType && p.UnemployedCount > 0);
                 if (assignedPop != null)
                 {
-                    int count              = Math.Min(dto.AssignedCount, slot.Capacity);
-                    slot.AssignedPop       = assignedPop;
-                    slot.AssignedCount     = count;
-                    assignedPop.CurrentEmployment = slot;
-                    assignedPop.EmployedCount     = count;
+                    int count = Math.Min(dto.AssignedCount, slot.Capacity);
+                    count = Math.Min(count, assignedPop.UnemployedCount);
+
+                    PopGroup workerPop = assignedPop;
+
+                    // Si el pop ya tiene otro trabajo, debemos dividir el pop (Split) para mantener simulación independiente
+                    if (assignedPop.CurrentEmployment != null)
+                    {
+                        workerPop = new PopGroup(assignedPop.Type, assignedPop.Culture, assignedPop.Religion, count, 0)
+                        {
+                            HealthIndex    = assignedPop.HealthIndex,
+                            Literacy       = assignedPop.Literacy,
+                            Militancy      = assignedPop.Militancy,
+                            Consciousness  = assignedPop.Consciousness,
+                            SocialCohesion = assignedPop.SocialCohesion
+                        };
+                        
+                        // Transferir ahorros proporcionalmente
+                        double savingsShare = assignedPop.Savings * ((double)count / assignedPop.Size);
+                        workerPop.Savings = savingsShare;
+                        assignedPop.Savings -= savingsShare;
+                        
+                        assignedPop.Size -= count;
+                        
+                        // Necesitamos añadir el pop a la lista, pero no podemos modificarla mientras la iteramos en teoría.
+                        // Sin embargo, DataService no está iterando province.Pops aquí, itera "slots", por lo que es seguro añadirlo.
+                        province.Pops.Add(workerPop);
+                    }
+
+                    slot.AssignedPop              = workerPop;
+                    slot.AssignedCount            = count;
+                    workerPop.CurrentEmployment   = slot;
+                    workerPop.EmployedCount       = count;
                 }
             }
 
@@ -157,8 +187,6 @@ public static class DataService
         public string       Id                      { get; set; } = Guid.NewGuid().ToString();
         public string       NameKey                 { get; set; } = "";
         public string       Type                    { get; set; } = "";   // slot type ID
-        public string       GoodProduced            { get; set; } = "";   // good ID
-        public double       BaseProductionPerWorker { get; set; }
         public int          Capacity                { get; set; }
         public List<string> AcceptedTypes           { get; set; } = new(); // pop type IDs
         public string?      AssignedPopType         { get; set; }          // pop type ID

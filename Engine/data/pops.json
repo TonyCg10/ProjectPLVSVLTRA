@@ -37,31 +37,5 @@
     "militancy": 0.02,
     "consciousness": 0.3,
     "socialCohesion": 0.95
-  },
-  {
-    "provinceId": "tarsis",
-    "type": "nobility",
-    "culture": "tarsiano",
-    "religion": "solaris",
-    "size": 80,
-    "savings": 15000.0,
-    "healthIndex": 0.85,
-    "literacy": 0.8,
-    "militancy": 0.0,
-    "consciousness": 0.5,
-    "socialCohesion": 1.0
-  },
-  {
-    "provinceId": "tarsis",
-    "type": "clergy",
-    "culture": "tarsiano",
-    "religion": "solaris",
-    "size": 200,
-    "savings": 800.0,
-    "healthIndex": 0.7,
-    "literacy": 0.65,
-    "militancy": 0.01,
-    "consciousness": 0.4,
-    "socialCohesion": 0.95
   }
 ]

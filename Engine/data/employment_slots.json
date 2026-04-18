@@ -1,27 +1,13 @@
 [
   {
     "provinceId": "tarsis",
-    "id": "tarsis_farm",
-    "nameKey": "slot.tarsis_farm",
-    "type": "farm",
-    "goodProduced": "grain",
-    "baseProductionPerWorker": 0.008,
-    "capacity": 6000,
+    "id": "tarsis_well",
+    "nameKey": "slot.tarsis_well",
+    "type": "well",
+    "capacity": 2000,
     "acceptedTypes": ["peasants"],
     "assignedPopType": "peasants",
-    "assignedCount": 5000
-  },
-  {
-    "provinceId": "tarsis",
-    "id": "tarsis_port",
-    "nameKey": "slot.tarsis_port",
-    "type": "fishery",
-    "goodProduced": "fish",
-    "baseProductionPerWorker": 0.005,
-    "capacity": 2000,
-    "acceptedTypes": ["peasants", "workers"],
-    "assignedPopType": "workers",
-    "assignedCount": 1200
+    "assignedCount": 1000
   },
   {
     "provinceId": "tarsis",
@@ -37,6 +23,48 @@
   },
   {
     "provinceId": "tarsis",
+    "id": "tarsis_farm",
+    "nameKey": "slot.tarsis_farm",
+    "type": "farm",
+    "capacity": 6000,
+    "acceptedTypes": ["peasants"],
+    "assignedPopType": "peasants",
+    "assignedCount": 4000
+  },
+  {
+    "provinceId": "tarsis",
+    "id": "tarsis_port",
+    "nameKey": "slot.tarsis_port",
+    "type": "fishery",
+    "goodProduced": "fish",
+    "baseProductionPerWorker": 0.005,
+    "capacity": 2000,
+    "acceptedTypes": ["peasants", "workers"],
+    "assignedPopType": "workers",
+    "assignedCount": 1200
+  },
+  {
+    "provinceId": "tarsis",
+    "id": "tarsis_ranch",
+    "nameKey": "slot.tarsis_ranch",
+    "type": "ranch",
+    "capacity": 1000,
+    "acceptedTypes": ["peasants"],
+    "assignedPopType": "peasants",
+    "assignedCount": 0
+  },
+  {
+    "provinceId": "tarsis",
+    "id": "tarsis_apothecary",
+    "nameKey": "slot.tarsis_apothecary",
+    "type": "apothecary",
+    "capacity": 200,
+    "acceptedTypes": ["workers", "artisans"],
+    "assignedPopType": "workers",
+    "assignedCount": 0
+  },
+  {
+    "provinceId": "tarsis",
     "id": "tarsis_textile",
     "nameKey": "slot.tarsis_textile",
     "type": "textile_mill",
@@ -45,6 +73,16 @@
     "capacity": 600,
     "acceptedTypes": ["workers", "peasants"],
     "assignedPopType": "workers",
+    "assignedCount": 400
+  },
+  {
+    "provinceId": "tarsis",
+    "id": "tarsis_trade",
+    "nameKey": "slot.tarsis_trade",
+    "type": "trading_post",
+    "capacity": 500,
+    "acceptedTypes": ["merchants"],
+    "assignedPopType": "merchants",
     "assignedCount": 400
   }
 ]

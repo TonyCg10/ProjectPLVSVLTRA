@@ -60,6 +60,9 @@ public class PopSystem : ISystem
             try { HealthPhase(province, fulfillments); }
             catch (Exception ex) { GameLogger.Error(Name, $"HealthPhase en {province.Id}", ex); }
 
+            try { EmploymentReviewPhase(province, fulfillments, currentTick); }
+            catch (Exception ex) { GameLogger.Error(Name, $"EmploymentReviewPhase en {province.Id}", ex); }
+
             if (currentTick % DemographicInterval == 0)
             {
                 try { DemographicsPhase(province); }
@@ -80,9 +83,7 @@ public class PopSystem : ISystem
     {
         foreach (var slot in province.EmploymentSlots)
         {
-            double produced = slot.ComputeDailyProduction();
-            if (produced > 0)
-                province.Market.AddSupply(slot.GoodProduced, produced);
+            slot.RunProductionTick(province.Market);
         }
     }
 
@@ -97,9 +98,16 @@ public class PopSystem : ISystem
 
             if (pop.CurrentEmployment != null && pop.EmployedCount > 0)
             {
-                double price          = province.Market.GetPrice(pop.CurrentEmployment.GoodProduced);
-                double wagePerWorker  = pop.CurrentEmployment.ComputeDailyWagePerWorker(price);
-                pop.DailyIncome       = wagePerWorker * pop.EmployedCount;
+                // Cooperativa Pura: El Pop se lleva el 100% de los beneficios (DailyProfit)
+                // dividido entre el número de trabajadores para sus arcas.
+                // Si el beneficio es negativo (los inputs costaron más de lo que vale la producción), 
+                // por ahora asumimos que no cobran (se quedan a 0, la fábrica absorbe pérdida mágica).
+                double totalProfit    = pop.CurrentEmployment.DailyProfit;
+                if (totalProfit > 0)
+                {
+                    double wagePerWorker  = totalProfit / pop.CurrentEmployment.AssignedCount;
+                    pop.DailyIncome       = wagePerWorker * pop.EmployedCount;
+                }
             }
 
             pop.Savings += pop.DailyIncome;
@@ -237,16 +245,30 @@ public class PopSystem : ISystem
             if (pop.Size <= 0) continue;
 
             // Fertilidad: emerge de HealthIndex sostenido
-            // Un pop sano y bien alimentado crece; uno hambriento, decrece
-            double fertilityBase  = 0.002; // ~0.7% anual base (por 30 días)
-            double fertilityBonus = pop.HealthIndex * 0.005;
-            double mortalityBase  = 0.001;
-            double mortalityExtra = (1.0 - pop.HealthIndex) * 0.008; // mortalidad por mala salud
+            // Multiplicamos masivamente las tasas para que la población explote en abundancia
+            double fertilityBase  = 0.01; // 1% base al mes
+            double fertilityBonus = pop.HealthIndex * 0.04; // Hasta 4% extra si tienen 100% salud
+            double mortalityBase  = 0.005; // 0.5% base
+            double mortalityExtra = (1.0 - pop.HealthIndex) * 0.05; // Mortalidad alta por mala salud
 
             double growthRate = (fertilityBase + fertilityBonus) - (mortalityBase + mortalityExtra);
             int delta         = (int)(pop.Size * growthRate);
 
             pop.Size = Math.Max(0, pop.Size + delta);
+
+            // Si la población se reduce por debajo de los empleados, mueren trabajadores.
+            if (pop.Size < pop.EmployedCount)
+            {
+                int deadWorkers = pop.EmployedCount - pop.Size;
+                pop.EmployedCount = pop.Size;
+                if (pop.CurrentEmployment != null)
+                {
+                    pop.CurrentEmployment.AssignedCount -= deadWorkers;
+                    // Prevenir desajustes menores que puedan llevar a AssignedCount negativo
+                    if (pop.CurrentEmployment.AssignedCount < 0) 
+                        pop.CurrentEmployment.AssignedCount = 0;
+                }
+            }
         }
 
         // Eliminar pops extintas y publicar evento
@@ -260,7 +282,62 @@ public class PopSystem : ISystem
     }
 
     // ============================================================
-    // FASE 7 — MOVILIDAD SOCIAL
+    // FASE 7 — REVISIÓN LABORAL (Dimisiones)
+    // ============================================================
+    private static void EmploymentReviewPhase(Province province, Dictionary<PopGroup, List<NeedFulfillment>> fulfillments, long currentTick)
+    {
+        // Evaluar dimisiones semanalmente
+        if (currentTick % 7 != 0) return;
+
+        var newUnemployedPops = new List<PopGroup>();
+
+        foreach (var pop in province.Pops)
+        {
+            if (pop.CurrentEmployment == null || pop.EmployedCount <= 0) continue;
+            if (!fulfillments.TryGetValue(pop, out var pf)) continue;
+
+            double survivalRatio = GetTierRatio(pf, NeedTier.Survival);
+
+            bool isStarving = survivalRatio < 0.8 && pop.Savings < 100;
+            bool isBankruptFactory = pop.CurrentEmployment.DailyProfit <= 0;
+
+            if (isStarving || isBankruptFactory)
+            {
+                // El 10% del grupo dimite por desesperación buscando un trabajo mejor
+                int quitters = pop.EmployedCount / 10;
+                if (quitters > 0)
+                {
+                    pop.EmployedCount -= quitters;
+                    pop.CurrentEmployment.AssignedCount -= quitters;
+                    pop.Size -= quitters;
+
+                    double savingsShare = pop.Savings * ((double)quitters / (pop.Size + quitters));
+                    pop.Savings -= savingsShare;
+
+                    var quitPop = new PopGroup(pop.Type, pop.Culture, pop.Religion, quitters, savingsShare)
+                    {
+                        HealthIndex    = pop.HealthIndex,
+                        Literacy       = pop.Literacy,
+                        Militancy      = pop.Militancy,
+                        Consciousness  = pop.Consciousness,
+                        SocialCohesion = pop.SocialCohesion,
+                        CurrentEmployment = null,
+                        EmployedCount = 0
+                    };
+                    
+                    foreach (var kv in pop.JobExperience) quitPop.JobExperience[kv.Key] = kv.Value;
+
+                    newUnemployedPops.Add(quitPop);
+                    GameLogger.Info("PopSystem", $"Movilidad Laboral en {province.Id}: {quitters} {pop.Type} han dimitido de '{pop.CurrentEmployment.Definition.Id}' por ruina/hambre.");
+                }
+            }
+        }
+
+        province.Pops.AddRange(newUnemployedPops);
+    }
+
+    // ============================================================
+    // FASE 8 — MOVILIDAD SOCIAL
     // ============================================================
     private static void SocialMobilityPhase(Province province, long currentTick)
     {

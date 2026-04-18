@@ -15,6 +15,7 @@ context.Language = Config.Language;
 
 var systems = new List<ISystem>
 {
+    new IndustryExpansionSystem(),
     new PopSystem()
 };
 

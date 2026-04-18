@@ -72,6 +72,14 @@ public static class GameRegistry
     public static double GetBasePrice(string goodId)
         => _goods.TryGetValue(goodId, out var g) ? g.BasePrice : 1.0;
 
+    /// <summary>
+    /// Permite actualizar una definición en caliente (útil para inyectar precios base calculados).
+    /// </summary>
+    public static void UpdateGoodDefinition(GoodDefinition newDef)
+    {
+        _goods[newDef.Id] = newDef;
+    }
+
     public static bool IsValidGood(string goodId)      => _goods.ContainsKey(goodId);
     public static bool IsValidPopType(string popTypeId)=> _popTypes.ContainsKey(popTypeId);
 
