@@ -1,0 +1,15 @@
+/run/media/toni/6EF68777F6873DF9/LINUX/CODE/ProjectPLVSVLTRA/Engine/bin/Debug/net9.0/Engine
+/run/media/toni/6EF68777F6873DF9/LINUX/CODE/ProjectPLVSVLTRA/Engine/bin/Debug/net9.0/Engine.deps.json
+/run/media/toni/6EF68777F6873DF9/LINUX/CODE/ProjectPLVSVLTRA/Engine/bin/Debug/net9.0/Engine.runtimeconfig.json
+/run/media/toni/6EF68777F6873DF9/LINUX/CODE/ProjectPLVSVLTRA/Engine/bin/Debug/net9.0/Engine.dll
+/run/media/toni/6EF68777F6873DF9/LINUX/CODE/ProjectPLVSVLTRA/Engine/bin/Debug/net9.0/Engine.pdb
+/run/media/toni/6EF68777F6873DF9/LINUX/CODE/ProjectPLVSVLTRA/Engine/obj/Debug/net9.0/Engine.GeneratedMSBuildEditorConfig.editorconfig
+/run/media/toni/6EF68777F6873DF9/LINUX/CODE/ProjectPLVSVLTRA/Engine/obj/Debug/net9.0/Engine.AssemblyInfoInputs.cache
+/run/media/toni/6EF68777F6873DF9/LINUX/CODE/ProjectPLVSVLTRA/Engine/obj/Debug/net9.0/Engine.AssemblyInfo.cs
+/run/media/toni/6EF68777F6873DF9/LINUX/CODE/ProjectPLVSVLTRA/Engine/obj/Debug/net9.0/Engine.csproj.CoreCompileInputs.cache
+/run/media/toni/6EF68777F6873DF9/LINUX/CODE/ProjectPLVSVLTRA/Engine/obj/Debug/net9.0/Engine.dll
+/run/media/toni/6EF68777F6873DF9/LINUX/CODE/ProjectPLVSVLTRA/Engine/obj/Debug/net9.0/refint/Engine.dll
+/run/media/toni/6EF68777F6873DF9/LINUX/CODE/ProjectPLVSVLTRA/Engine/obj/Debug/net9.0/Engine.pdb
+/run/media/toni/6EF68777F6873DF9/LINUX/CODE/ProjectPLVSVLTRA/Engine/obj/Debug/net9.0/Engine.genruntimeconfig.cache
+/run/media/toni/6EF68777F6873DF9/LINUX/CODE/ProjectPLVSVLTRA/Engine/obj/Debug/net9.0/ref/Engine.dll
+/run/media/toni/6EF68777F6873DF9/LINUX/CODE/ProjectPLVSVLTRA/Engine/bin/Debug/net9.0/data/provinces.json

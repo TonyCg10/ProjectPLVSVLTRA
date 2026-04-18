@@ -1,0 +1,119 @@
+[
+  {
+    "id": "province_tarsis",
+    "name": "Tarsis",
+    "region": "Costa del Sur",
+    "pops": [
+      {
+        "type": "Peasants",
+        "culture": "Tarsiano",
+        "religion": "Solaris",
+        "size": 8000,
+        "savings": 120.0,
+        "healthIndex": 0.55,
+        "literacy": 0.04,
+        "militancy": 0.05,
+        "consciousness": 0.03,
+        "socialCohesion": 0.9
+      },
+      {
+        "type": "Workers",
+        "culture": "Tarsiano",
+        "religion": "Solaris",
+        "size": 2500,
+        "savings": 200.0,
+        "healthIndex": 0.5,
+        "literacy": 0.12,
+        "militancy": 0.1,
+        "consciousness": 0.08,
+        "socialCohesion": 0.85
+      },
+      {
+        "type": "Merchants",
+        "culture": "Tarsiano",
+        "religion": "Solaris",
+        "size": 400,
+        "savings": 2500.0,
+        "healthIndex": 0.75,
+        "literacy": 0.45,
+        "militancy": 0.02,
+        "consciousness": 0.3,
+        "socialCohesion": 0.95
+      },
+      {
+        "type": "Nobility",
+        "culture": "Tarsiano",
+        "religion": "Solaris",
+        "size": 80,
+        "savings": 15000.0,
+        "healthIndex": 0.85,
+        "literacy": 0.8,
+        "militancy": 0.0,
+        "consciousness": 0.5,
+        "socialCohesion": 1.0
+      },
+      {
+        "type": "Clergy",
+        "culture": "Tarsiano",
+        "religion": "Solaris",
+        "size": 200,
+        "savings": 800.0,
+        "healthIndex": 0.7,
+        "literacy": 0.65,
+        "militancy": 0.01,
+        "consciousness": 0.4,
+        "socialCohesion": 0.95
+      }
+    ],
+    "employmentSlots": [
+      {
+        "type": "Farm",
+        "name": "Campos de Tarsis",
+        "goodProduced": "Grain",
+        "baseProductionPerWorker": 0.008,
+        "capacity": 6000,
+        "acceptedTypes": ["Peasants"],
+        "assignedPopType": "Peasants",
+        "assignedCount": 5000
+      },
+      {
+        "type": "Fishery",
+        "name": "Puerto de Tarsis",
+        "goodProduced": "Fish",
+        "baseProductionPerWorker": 0.005,
+        "capacity": 2000,
+        "acceptedTypes": ["Peasants", "Workers"],
+        "assignedPopType": "Workers",
+        "assignedCount": 1200
+      },
+      {
+        "type": "Workshop",
+        "name": "Talleres del Gremio",
+        "goodProduced": "Tools",
+        "baseProductionPerWorker": 0.003,
+        "capacity": 800,
+        "acceptedTypes": ["Workers", "Artisans"],
+        "assignedPopType": "Workers",
+        "assignedCount": 600
+      },
+      {
+        "type": "TextileMill",
+        "name": "Hilandería de Tarsis",
+        "goodProduced": "Cloth",
+        "baseProductionPerWorker": 0.004,
+        "capacity": 600,
+        "acceptedTypes": ["Workers", "Peasants"],
+        "assignedPopType": "Workers",
+        "assignedCount": 400
+      }
+    ],
+    "initialMarketStock": {
+      "Grain":    80.0,
+      "Water":    50.0,
+      "Fish":     20.0,
+      "Cloth":    15.0,
+      "Tools":    8.0,
+      "Medicine": 3.0
+    }
+  }
+]
