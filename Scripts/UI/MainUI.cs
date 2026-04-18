@@ -6,10 +6,10 @@ using Engine.Models;
 
 public partial class MainUI : Control
 {
-    private Label _dateLabel;
-    private Label _popLabel;
-    private Label _statusLabel;
-    private GameManager _gameManager;
+    private Label _dateLabel = null!;
+    private Label _popLabel = null!;
+    private Label _statusLabel = null!;
+    private GameManager _gameManager = null!;
 
     public override void _Ready()
     {

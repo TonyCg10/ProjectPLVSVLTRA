@@ -9,7 +9,7 @@ using Engine.Interfaces;
 
 public partial class GameManager : Node
 {
-    private Motor _motor;
+    private Motor _motor = null!;
     private float _tickTimer = 0.0f;
 
     public Motor Motor => _motor;

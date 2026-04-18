@@ -5,11 +5,11 @@ using Engine.Models;
 
 public partial class MapManager : Node
 {
-	private MeshInstance3D _provincia1Mesh;
-	private MeshInstance3D _provincia2Mesh;
+	private MeshInstance3D _provincia1Mesh = null!;
+	private MeshInstance3D _provincia2Mesh = null!;
 
 	private Dictionary<string, MeshInstance3D> _provinceMeshes = new();
-	private GameManager _gameManager;
+	private GameManager _gameManager = null!;
 
 	public override void _Ready()
 	{
@@ -35,7 +35,7 @@ public partial class MapManager : Node
 		// Por ahora, solo nos aseguramos de que la conexión existe.
 	}
 
-	public Province GetProvinceAtMesh(MeshInstance3D mesh)
+	public Province? GetProvinceAtMesh(MeshInstance3D mesh)
 	{
 		foreach (var entry in _provinceMeshes)
 		{

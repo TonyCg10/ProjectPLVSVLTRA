@@ -3,7 +3,7 @@
 [ext_resource type="Script" uid="uid://dgbfpfrt7tp7p" path="res://Scripts/UI/MapManager.cs" id="1_xywc0"]
 [ext_resource type="Script" uid="uid://gos17crquxl6" path="res://Scripts/UI/GameManager.cs" id="2_gejyx"]
 [ext_resource type="Script" uid="uid://cnw1y23ykhrtf" path="res://Scripts/UI/MainUI.cs" id="3_5yunf"]
-[ext_resource type="Script" uid="uid://ecm0xdjfxpe3" path="res://Scripts/View/CamaraEstrategia.cs" id="4_cam"]
+[ext_resource type="Script" uid="uid://ecm0xdjfxpe3" path="res://Scripts/View/CameraManager.cs" id="4_cam"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_m0ccj"]
 albedo_color = Color(0, 0.5529412, 1, 1)

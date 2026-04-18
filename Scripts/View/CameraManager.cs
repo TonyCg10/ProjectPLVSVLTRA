@@ -1,7 +1,7 @@
 using Godot;
 using System;
 
-public partial class CamaraEstrategia : Camera3D
+public partial class CameraManager : Camera3D
 {
 	[Export] public float VelocidadMovimiento = 20.0f;
 	[Export] public float VelocidadZoom = 2.0f;
