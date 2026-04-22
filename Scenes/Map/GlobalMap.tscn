@@ -1,0 +1,74 @@
+[gd_scene format=3 uid="uid://dv81mto5c05cx"]
+
+[ext_resource type="Texture2D" path="res://data/assets/terrain/HYP_HR_SR_OB_DR.png" id="2_2eq0d"]
+[ext_resource type="Texture2D" path="res://data/assets/terrain/8k_earth_normal_map.png" id="4_ewfb4"]
+[ext_resource type="Texture2D" path="res://data/assets/terrain/16_bit_dem_large.png" id="4_wppug"]
+[ext_resource type="Shader" path="res://data/assets/shaders/GlobalMapShader.gdshader" id="7_wppug"]
+[ext_resource type="Script" path="res://Scripts/View/Map/MapController.cs" id="9_j2qug"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_twyp7"]
+size = Vector3(540, 1, 270)
+
+[sub_resource type="CompressedTexture2D" id="CompressedTexture2D_o4h1p"]
+load_path = "res://.godot/imported/godot_id_map.png-f8249629462c480f250e6c223b437d6e.ctex"
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_32mi3"]
+render_priority = 0
+shader = ExtResource("7_wppug")
+shader_parameter/id_map = SubResource("CompressedTexture2D_o4h1p")
+shader_parameter/height_map = ExtResource("4_wppug")
+shader_parameter/albedo_tex = ExtResource("2_2eq0d")
+shader_parameter/normal_tex = ExtResource("4_ewfb4")
+shader_parameter/map_mode = 3
+shader_parameter/height_scale = 2.0
+shader_parameter/brightness = 1.0
+shader_parameter/contrast = 1.1
+shader_parameter/saturation = 1.1
+shader_parameter/detail_strength = 0.6
+shader_parameter/detail_scale = 500.0
+shader_parameter/selected_country_idx = -1
+shader_parameter/selected_state_idx = -1
+shader_parameter/selection_color = Vector3(1, 1, 1)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_ewfb4"]
+material = SubResource("ShaderMaterial_32mi3")
+size = Vector2(540, 270)
+subdivide_width = 540
+subdivide_depth = 270
+center_offset = Vector3(0, 1, 0)
+
+[node name="GlobalMap" type="StaticBody3D" unique_id=923616844]
+script = ExtResource("9_j2qug")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1220385529]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
+shape = SubResource("BoxShape3D_twyp7")
+
+[node name="GlobalMap" type="MeshInstance3D" parent="." unique_id=1205818142]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
+mesh = SubResource("PlaneMesh_ewfb4")
+
+[node name="UI" type="CanvasLayer" parent="." unique_id=997724891]
+
+[node name="HBox" type="HBoxContainer" parent="UI" unique_id=1674857702]
+offset_left = 843.0
+offset_top = 84.0
+offset_right = 1273.0
+offset_bottom = 124.0
+theme_override_constants/separation = 10
+
+[node name="BtnNodos" type="Button" parent="UI/HBox" unique_id=1078556802]
+layout_mode = 2
+text = "Nodos"
+
+[node name="BtnPaises" type="Button" parent="UI/HBox" unique_id=145229911]
+layout_mode = 2
+text = "Países"
+
+[node name="BtnEstados" type="Button" parent="UI/HBox" unique_id=1876807809]
+layout_mode = 2
+text = "Estados"
+
+[node name="BtnNatural" type="Button" parent="UI/HBox" unique_id=1876807810]
+layout_mode = 2
+text = "Natural"

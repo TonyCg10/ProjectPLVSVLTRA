@@ -1,0 +1,67 @@
+[
+  {
+    "provinceId": "CUB-1365",
+    "type": "peasants",
+    "culture": "cubano",
+    "religion": "catolico",
+    "size": 50000,
+    "savings": 500.0,
+    "healthIndex": 0.7,
+    "literacy": 0.4,
+    "militancy": 0.01,
+    "consciousness": 0.1,
+    "socialCohesion": 0.9
+  },
+  {
+    "provinceId": "DOM-1964",
+    "type": "peasants",
+    "culture": "dominicano",
+    "religion": "catolico",
+    "size": 40000,
+    "savings": 400.0,
+    "healthIndex": 0.65,
+    "literacy": 0.35,
+    "militancy": 0.02,
+    "consciousness": 0.12,
+    "socialCohesion": 0.85
+  },
+  {
+    "provinceId": "HTI-1386",
+    "type": "peasants",
+    "culture": "haitiano",
+    "religion": "catolico",
+    "size": 45000,
+    "savings": 200.0,
+    "healthIndex": 0.5,
+    "literacy": 0.2,
+    "militancy": 0.05,
+    "consciousness": 0.15,
+    "socialCohesion": 0.8
+  },
+  {
+    "provinceId": "JAM-1370",
+    "type": "peasants",
+    "culture": "jamaicano",
+    "religion": "protestante",
+    "size": 30000,
+    "savings": 600.0,
+    "healthIndex": 0.68,
+    "literacy": 0.45,
+    "militancy": 0.01,
+    "consciousness": 0.1,
+    "socialCohesion": 0.92
+  },
+  {
+    "provinceId": "PRI-5260",
+    "type": "peasants",
+    "culture": "puertorriqueno",
+    "religion": "catolico",
+    "size": 35000,
+    "savings": 800.0,
+    "healthIndex": 0.75,
+    "literacy": 0.5,
+    "militancy": 0.01,
+    "consciousness": 0.11,
+    "socialCohesion": 0.95
+  }
+]

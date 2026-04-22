@@ -1,6 +1,7 @@
 [
-  {
-    "id": "republica_sur",
-    "nameKey": "country.republica_sur"
-  }
+  { "id": "CUB", "nameKey": "country.CUB" },
+  { "id": "DOM", "nameKey": "country.DOM" },
+  { "id": "HTI", "nameKey": "country.HTI" },
+  { "id": "JAM", "nameKey": "country.JAM" },
+  { "id": "PRI", "nameKey": "country.PRI" }
 ]

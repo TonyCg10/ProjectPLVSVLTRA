@@ -126,4 +126,40 @@ public class EmploymentSlot
         // 5. Ganar experiencia
         pop.AddExperience(Type, 0.001f);
     }
+
+    public EmploymentSlot Split(float percentage)
+    {
+        percentage = Math.Clamp(percentage, 0f, 1f);
+        int splitCapacity = (int)Math.Round(Capacity * percentage);
+        if (splitCapacity > Capacity) splitCapacity = Capacity;
+        
+        double actualRatio = Capacity > 0 ? (double)splitCapacity / Capacity : 0;
+        
+        Capacity -= splitCapacity;
+        
+        int splitAssigned = 0;
+        if (AssignedCount > 0)
+        {
+            splitAssigned = (int)Math.Round(AssignedCount * actualRatio);
+            if (splitAssigned > splitCapacity) splitAssigned = splitCapacity;
+            if (splitAssigned > AssignedCount) splitAssigned = AssignedCount;
+            AssignedCount -= splitAssigned;
+        }
+
+        return new EmploymentSlot
+        {
+            Id = Guid.NewGuid().ToString(),
+            Type = this.Type,
+            NameKey = this.NameKey,
+            AcceptedTypes = new HashSet<string>(this.AcceptedTypes),
+            Capacity = splitCapacity,
+            AssignedCount = splitAssigned
+        };
+    }
+
+    public void Merge(EmploymentSlot other)
+    {
+        this.Capacity += other.Capacity;
+        this.AssignedCount += other.AssignedCount;
+    }
 }

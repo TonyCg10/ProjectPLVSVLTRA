@@ -1,6 +1,10 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.IO;
+using System.Collections.Generic;
 using Engine.Models;
+using Godot;
+using System;
 
 namespace Engine.Services;
 
@@ -18,6 +22,175 @@ namespace Engine.Services;
 /// </summary>
 public static class DataService
 {
+
+    public struct NodeData
+    {
+        public ushort StateIdx;
+        public ushort CountryIdx;
+    }
+
+    public static NodeData[] Nodes;
+    public static string[] StateCatalog;
+    public static string[] CountryCatalog;
+
+    public static ImageTexture CountryLookup;
+    public static ImageTexture StateLookup;
+    
+    // Caché de límites UV para enfoque nacional
+    private static Dictionary<int, Rect2> _countryBoundsCache = new();
+    
+    public static Rect2 GetCountryBounds(int countryIdx)
+    {
+        if (_countryBoundsCache.TryGetValue(countryIdx, out var bounds)) return bounds;
+        return new Rect2(0, 0, 1, 1); // Default si no se ha escaneado
+    }
+
+    public static void ScanCountryBounds(Image idMap)
+    {
+        if (_countryBoundsCache.Count > 0) return; // Ya escaneado
+
+        GD.Print("[DataService] Escaneando límites de países para enfoque regional...");
+        int w = idMap.GetWidth();
+        int h = idMap.GetHeight();
+        
+        Dictionary<int, float> minU = new();
+        Dictionary<int, float> maxU = new();
+        Dictionary<int, float> minV = new();
+        Dictionary<int, float> maxV = new();
+
+        for (int y = 0; y < h; y += 4) // Salto de 4 píxeles para velocidad
+        {
+            for (int x = 0; x < w; x += 4)
+            {
+                Color pixel = idMap.GetPixel(x, y);
+                int nodeId = (int)Math.Round(pixel.R * 255.0) + 
+                             ((int)Math.Round(pixel.G * 255.0) * 256) + 
+                             ((int)Math.Round(pixel.B * 255.0) * 65536);
+                
+                if (nodeId <= 0 || nodeId > Nodes.Length) continue;
+                int cIdx = Nodes[nodeId - 1].CountryIdx;
+                
+                float u = (float)x / w;
+                float v = (float)y / h;
+
+                if (!minU.ContainsKey(cIdx)) {
+                    minU[cIdx] = u; maxU[cIdx] = u;
+                    minV[cIdx] = v; maxV[cIdx] = v;
+                } else {
+                    minU[cIdx] = Math.Min(minU[cIdx], u);
+                    maxU[cIdx] = Math.Max(maxU[cIdx], u);
+                    minV[cIdx] = Math.Min(minV[cIdx], v);
+                    maxV[cIdx] = Math.Max(maxV[cIdx], v);
+                }
+            }
+        }
+
+        foreach (var id in minU.Keys)
+        {
+            _countryBoundsCache[id] = new Rect2(minU[id], minV[id], maxU[id] - minU[id], maxV[id] - minV[id]);
+        }
+        GD.Print($"[DataService] Límites de {_countryBoundsCache.Count} países calculados.");
+    }
+
+    public static Color[] CountryPalette;
+    public static Color[] StatePalette;
+
+    private static void LoadMapData(string dataFolder)
+    {
+        // 1. Cargar Catálogos
+        string statesPath = Path.Combine(dataFolder, "map", "catalogs", "catalog_states.json");
+        StateCatalog = JsonSerializer.Deserialize<string[]>(File.ReadAllText(statesPath));
+
+        string countriesPath = Path.Combine(dataFolder, "map", "catalogs", "catalog_countries.json");
+        CountryCatalog = JsonSerializer.Deserialize<string[]>(File.ReadAllText(countriesPath));
+
+        // 2. Cargar Binario
+        string binPath = Path.Combine(dataFolder, "map", "map_nodes.bin");
+        byte[] bytes = File.ReadAllBytes(binPath);
+        
+        int totalNodes = bytes.Length / 4;
+        Nodes = new NodeData[totalNodes];
+
+        // Lectura rápida de memoria
+        using (var ms = new MemoryStream(bytes))
+        using (var br = new BinaryReader(ms))
+        {
+            for (int i = 0; i < totalNodes; i++)
+            {
+                Nodes[i] = new NodeData {
+                    StateIdx = br.ReadUInt16(),
+                    CountryIdx = br.ReadUInt16()
+                };
+            }
+        }
+        // Console.WriteLine ($"[DataService] {totalNodes} nodos cargados.");
+    }
+
+    public static void GenerateLookupTextures(ShaderMaterial mapMaterial)
+    {
+        // Usamos una textura de 4096x4096 para soportar hasta 16M de nodos
+        // (Tu binario actual tiene ~10.7M)
+        int texSize = 4096;
+        int totalNodes = Nodes.Length;
+
+        // Buffers de bytes para alta velocidad (mucho más rápidos que SetPixel)
+        byte[] countryData = new byte[texSize * texSize * 3];
+        byte[] stateData   = new byte[texSize * texSize * 3];
+
+        // Generar paletas y guardarlas
+        CountryPalette = GeneratePalette(CountryCatalog.Length, 123);
+        StatePalette   = GeneratePalette(StateCatalog.Length, 456);
+
+        for (int i = 0; i < totalNodes; i++)
+        {
+            // Seguridad ante índices fuera de rango
+            int cIdx = Nodes[i].CountryIdx;
+            int sIdx = Nodes[i].StateIdx;
+            if (cIdx >= CountryCatalog.Length) cIdx = 0;
+            if (sIdx >= StateCatalog.Length)   sIdx = 0;
+
+            Color cCountry = CountryPalette[cIdx];
+            Color cState   = StatePalette[sIdx];
+            
+            int p = i * 3;
+            // Llenamos buffer de países
+            countryData[p]     = (byte)(cCountry.R * 255);
+            countryData[p + 1] = (byte)(cCountry.G * 255);
+            countryData[p + 2] = (byte)(cCountry.B * 255);
+            
+            // Llenamos buffer de estados
+            stateData[p]       = (byte)(cState.R * 255);
+            stateData[p + 1]   = (byte)(cState.G * 255);
+            stateData[p + 2]   = (byte)(cState.B * 255);
+        }
+
+        // Crear las texturas de imagen
+        Image imgCountry = Image.CreateFromData(texSize, texSize, false, Image.Format.Rgb8, countryData);
+        Image imgState   = Image.CreateFromData(texSize, texSize, false, Image.Format.Rgb8, stateData);
+        
+        CountryLookup = ImageTexture.CreateFromImage(imgCountry);
+        StateLookup   = ImageTexture.CreateFromImage(imgState);
+
+        // Inyectamos las texturas directamente al shader del mapa
+        mapMaterial.SetShaderParameter("country_lookup", CountryLookup);
+        mapMaterial.SetShaderParameter("state_lookup", StateLookup);
+        
+        // OPTIMIZACIÓN: Liberamos las imágenes temporales de la RAM principal
+        imgCountry.Dispose();
+        imgState.Dispose();
+        
+        GD.Print($"[DataService] Shader actualizado con {totalNodes} nodos.");
+    }
+
+    private static Color[] GeneratePalette(int size, int seed)
+    {
+        Color[] palette = new Color[size];
+        var rand = new Random(seed);
+        for (int i = 0; i < size; i++)
+            palette[i] = new Color((float)rand.NextDouble(), (float)rand.NextDouble(), (float)rand.NextDouble());
+        return palette;
+    }
+    
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNameCaseInsensitive = true,
@@ -51,6 +224,9 @@ public static class DataService
         // 2. Localización
         Loc.Load(locFolder, context.Language);
 
+        // 2.3 Cargar Datos del Mapa (Binario + Catálogos)
+        LoadMapData(dataFolder);
+
         // 2.5 Países (Countries)
         var countries = LoadJson<List<CountryDto>>(Path.Combine(dataFolder, "countries.json")) ?? new();
         var countryMap = new Dictionary<string, Country>();
@@ -59,6 +235,17 @@ public static class DataService
             var c = new Country(dto.Id, dto.NameKey);
             countryMap[dto.Id] = c;
             context.Countries.Add(c);
+        }
+
+        // 2.6 Asegurar que todos los países del catálogo existan
+        foreach (var countryId in CountryCatalog)
+        {
+            if (!countryMap.ContainsKey(countryId))
+            {
+                var c = new Country(countryId, "country." + countryId);
+                countryMap[countryId] = c;
+                context.Countries.Add(c);
+            }
         }
 
         // 3. Provincias (shells)
@@ -79,8 +266,32 @@ public static class DataService
             context.Provinces.Add(p);
         }
 
+        // 3.5 Mapear Nodos a Provincias y crear provincias faltantes del catálogo
+        for (int i = 0; i < Nodes.Length; i++)
+        {
+            string stateId   = StateCatalog[Nodes[i].StateIdx];
+            string countryId = CountryCatalog[Nodes[i].CountryIdx];
+
+            if (!provinceMap.TryGetValue(stateId, out var p))
+            {
+                p = new Province(stateId, "province." + stateId);
+                p.Market.InitializeFromRegistry();
+                provinceMap[stateId] = p;
+                context.Provinces.Add(p);
+
+                // Si la provincia es nueva, le asignamos el dueño del catálogo
+                if (countryMap.TryGetValue(countryId, out var owner))
+                {
+                    p.Owner = owner;
+                    owner.Provinces.Add(p);
+                }
+            }
+
+            p.NodeIndices.Add(i);
+        }
+
         // 4. Pops
-        var pops = LoadJson<List<PopDto>>(Path.Combine(dataFolder, "pops.json")) ?? new();
+        var pops = LoadJson<List<PopDto>>(Path.Combine(dataFolder, "simulation", "population", "pops.json")) ?? new();
         foreach (var dto in pops)
         {
             if (!provinceMap.TryGetValue(dto.ProvinceId, out var province)) continue;
@@ -96,8 +307,8 @@ public static class DataService
             province.Pops.Add(pop);
         }
 
-        // 5. Employment Slots
-        var slots = LoadJson<List<EmploymentSlotDto>>(Path.Combine(dataFolder, "employment_slots.json")) ?? new();
+        // 5. Empleos (Employment Slots)
+        var slots = LoadJson<List<EmploymentSlotDto>>(Path.Combine(dataFolder, "simulation", "economy", "employment_slots.json")) ?? new();
         foreach (var dto in slots)
         {
             if (!provinceMap.TryGetValue(dto.ProvinceId, out var province)) continue;
@@ -156,13 +367,13 @@ public static class DataService
             province.EmploymentSlots.Add(slot);
         }
 
-        // 6. Stock inicial de mercado
-        var stocks = LoadJson<List<MarketStockDto>>(Path.Combine(dataFolder, "market_stock.json")) ?? new();
+        // 6. Mercado (Market Stock)
+        var stocks = LoadJson<List<MarketStockDto>>(Path.Combine(dataFolder, "simulation", "economy", "market_stock.json")) ?? new();
         foreach (var dto in stocks)
         {
             if (!provinceMap.TryGetValue(dto.ProvinceId, out var province)) continue;
             foreach (var (good, amount) in dto.Stocks)
-                province.Market.AddSupply(good, amount);
+                province.Market.AddSupply(good, (float)amount);
         }
 
         GameLogger.Info("DataService", $"Mundo cargado: {context.Provinces.Count} provincias, {context.WorldPopulation:N0} pops.");

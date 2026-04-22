@@ -9,6 +9,9 @@ public class Province
     public string RegionKey { get; set; } = "";
 
     public Country? Owner { get; set; }
+    
+    // Nodos físicos que componen esta provincia (fronteras fluidas)
+    public HashSet<int> NodeIndices { get; set; } = new();
 
     public List<PopGroup>        Pops             { get; set; } = new();
     public List<EmploymentSlot>  EmploymentSlots  { get; set; } = new();

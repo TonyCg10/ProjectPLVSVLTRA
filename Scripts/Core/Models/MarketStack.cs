@@ -60,4 +60,42 @@ public class MarketStack
         DailyDemand = 0;
         DailySupply = 0;
     }
+
+    public MarketStack Split(float percentage)
+    {
+        percentage = Math.Clamp(percentage, 0f, 1f);
+        
+        double splitAvailable = Available * percentage;
+        double splitDemand = DailyDemand * percentage;
+        double splitSupply = DailySupply * percentage;
+
+        Available -= splitAvailable;
+        DailyDemand -= splitDemand;
+        DailySupply -= splitSupply;
+
+        return new MarketStack(this.Good, this.BasePrice, splitAvailable)
+        {
+            CurrentPrice = this.CurrentPrice,
+            DailyDemand = splitDemand,
+            DailySupply = splitSupply
+        };
+    }
+
+    public void Merge(MarketStack other)
+    {
+        // Precio ponderado por stock antes de sumar
+        double totalStock = this.Available + other.Available;
+        if (totalStock > 0)
+        {
+            this.CurrentPrice = (this.CurrentPrice * this.Available + other.CurrentPrice * other.Available) / totalStock;
+        }
+        else
+        {
+            this.CurrentPrice = (this.CurrentPrice + other.CurrentPrice) / 2.0;
+        }
+
+        this.Available += other.Available;
+        this.DailyDemand += other.DailyDemand;
+        this.DailySupply += other.DailySupply;
+    }
 }

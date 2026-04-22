@@ -60,4 +60,29 @@ public class LocalMarket
     public double GetPrice(string good) => Stacks.TryGetValue(good, out var s) ? s.CurrentPrice : 0;
     public double GetStock(string good) => Stacks.TryGetValue(good, out var s) ? s.Available   : 0;
     public MarketStack? GetStack(string good) => Stacks.TryGetValue(good, out var s) ? s : null;
+
+    public LocalMarket Split(float percentage)
+    {
+        var newMarket = new LocalMarket();
+        foreach (var kv in Stacks)
+        {
+            newMarket.Stacks[kv.Key] = kv.Value.Split(percentage);
+        }
+        return newMarket;
+    }
+
+    public void Merge(LocalMarket other)
+    {
+        foreach (var kv in other.Stacks)
+        {
+            if (this.Stacks.TryGetValue(kv.Key, out var myStack))
+            {
+                myStack.Merge(kv.Value);
+            }
+            else
+            {
+                this.Stacks[kv.Key] = kv.Value;
+            }
+        }
+    }
 }

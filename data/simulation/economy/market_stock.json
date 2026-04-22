@@ -1,0 +1,26 @@
+[
+  {
+    "provinceId": "CUB-1365",
+    "stocks": {
+      "grain": 100.0,
+      "water": 100.0,
+      "sugar": 50.0
+    }
+  },
+  {
+    "provinceId": "DOM-1964",
+    "stocks": {
+      "grain": 80.0,
+      "water": 80.0,
+      "tobacco": 30.0
+    }
+  },
+  {
+    "provinceId": "HTI-1386",
+    "stocks": {
+      "grain": 60.0,
+      "water": 60.0,
+      "coffee": 25.0
+    }
+  }
+]

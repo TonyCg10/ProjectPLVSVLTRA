@@ -109,6 +109,7 @@ public class PopGroup
 
         Savings += other.Savings;
         Size    += other.Size;
+        EmployedCount += other.EmployedCount; // Consolidar empleo también
 
         // Fusionar experiencia (promediada)
         foreach (var kv in other.JobExperience)
@@ -118,5 +119,48 @@ public class PopGroup
         }
 
         RecalculateWealthTier();
+    }
+
+    /// <summary>
+    /// Divide este pop, extrayendo un porcentaje.
+    /// Retorna un nuevo PopGroup con el porcentaje indicado, reduciendo este de forma segura.
+    /// </summary>
+    public PopGroup Split(float percentage)
+    {
+        percentage = Math.Clamp(percentage, 0f, 1f);
+        int splitSize = (int)Math.Round(Size * percentage);
+        if (splitSize > Size) splitSize = Size;
+        
+        double actualRatio = Size > 0 ? (double)splitSize / Size : 0;
+        double splitSavings = Savings * actualRatio;
+        
+        Size -= splitSize;
+        Savings -= splitSavings;
+        
+        int splitEmployed = 0;
+        if (EmployedCount > 0)
+        {
+            splitEmployed = (int)Math.Round(EmployedCount * actualRatio);
+            if (splitEmployed > splitSize) splitEmployed = splitSize;
+            if (splitEmployed > EmployedCount) splitEmployed = EmployedCount;
+            EmployedCount -= splitEmployed;
+        }
+
+        var newPop = new PopGroup(Type, Culture, Religion, splitSize, splitSavings)
+        {
+            HealthIndex = this.HealthIndex,
+            Literacy = this.Literacy,
+            Militancy = this.Militancy,
+            Consciousness = this.Consciousness,
+            Radicalism = this.Radicalism,
+            SocialCohesion = this.SocialCohesion,
+            JobExperience = new Dictionary<string, float>(this.JobExperience),
+            EmployedCount = splitEmployed
+        };
+        
+        newPop.RecalculateWealthTier();
+        this.RecalculateWealthTier();
+        
+        return newPop;
     }
 }
