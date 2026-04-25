@@ -1,0 +1,6 @@
+[
+  { "id": "peasants",    "wealthClass": "Low",    "baseLiteracy": 0.04 },
+  { "id": "workers",     "wealthClass": "Low",    "baseLiteracy": 0.12 },
+  { "id": "artisans",    "wealthClass": "Low",    "baseLiteracy": 0.25 },
+  { "id": "merchants",   "wealthClass": "High",   "baseLiteracy": 0.45 }
+]

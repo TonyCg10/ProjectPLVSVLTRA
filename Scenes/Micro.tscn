@@ -1,0 +1,151 @@
+[gd_scene format=3 uid="uid://bhwo2d880racs"]
+
+[ext_resource type="Shader" uid="uid://cg7d55xenepin" path="res://Assets/Shaders/RegionalMapShader.gdshader" id="1_shader"]
+[ext_resource type="Texture2D" uid="uid://bjpn6230yrfnx" path="res://Assets/Terrain/HYP_HR_SR_OB_DR.png" id="2_albedo"]
+[ext_resource type="Texture2D" uid="uid://beg0uvlraun62" path="res://Assets/Terrain/godot_id_map.png" id="3_idmap"]
+[ext_resource type="Texture2D" uid="uid://hwdw25vpeebj" path="res://Assets/Terrain/16_bit_dem_large.png" id="4_height"]
+[ext_resource type="Texture2D" uid="uid://gy5xla757cyj" path="res://Assets/Terrain/8k_earth_normal_map.png" id="5_normal"]
+[ext_resource type="Texture2D" uid="uid://buoptatj3btva" path="res://Assets/Terrain/water_8k.png" id="6_water"]
+[ext_resource type="Texture2D" uid="uid://ckfllnyws6wrx" path="res://Assets/Terrain/splatmap_godot.png" id="7_splat"]
+[ext_resource type="Texture2D" uid="uid://b5nuh2hjt6qgr" path="res://Assets/Textures/Grass004_2K-JPG/Grass004_2K-JPG_Color.jpg" id="8_grass"]
+[ext_resource type="Texture2D" uid="uid://dm8t8kd3kjxrs" path="res://Assets/Textures/Grass004_2K-JPG/Grass004_2K-JPG_NormalDX.jpg" id="9_grass_n"]
+[ext_resource type="Texture2D" uid="uid://ldrfylpijqbj" path="res://Assets/Textures/Terrain001_2K-PNG/Terrain001_2K_Soil.png" id="10_sand"]
+[ext_resource type="Texture2D" uid="uid://mbw1rtb5y6nn" path="res://Assets/Textures/Ground093C_2K-JPG/Ground093C_2K-JPG_NormalDX.jpg" id="11_sand_n"]
+[ext_resource type="Texture2D" uid="uid://d1mtr42hd127y" path="res://Assets/Textures/Terrain001_2K-PNG/Terrain001_2K_Details.png" id="12_rock"]
+[ext_resource type="Texture2D" uid="uid://i5hvshgn4kk4" path="res://Assets/Textures/Rock058_2K-JPG/Rock058_2K-JPG_NormalDX.jpg" id="13_rock_n"]
+[ext_resource type="Texture2D" uid="uid://bu5dcem1pli8w" path="res://Assets/Textures/Terrain001_2K-PNG/Terrain001_2K.exr" id="14_disp"]
+[ext_resource type="Script" uid="uid://sttwm6bddh0s" path="res://Scripts/Map/MapView.cs" id="15_mapview"]
+[ext_resource type="Script" uid="uid://don6d66wnlu8j" path="res://Scripts/Camera/StrategyCamera.cs" id="16_camera"]
+[ext_resource type="Script" uid="uid://bxvsxqjg855bd" path="res://Scripts/UI/HUD.cs" id="17_hud"]
+
+[sub_resource type="ShaderMaterial" id="mat_micro"]
+render_priority = 0
+shader = ExtResource("1_shader")
+shader_parameter/id_map = ExtResource("3_idmap")
+shader_parameter/height_map = ExtResource("4_height")
+shader_parameter/albedo_tex = ExtResource("2_albedo")
+shader_parameter/normal_tex = ExtResource("5_normal")
+shader_parameter/water_map = ExtResource("6_water")
+shader_parameter/splat_map = ExtResource("7_splat")
+shader_parameter/country_uv_min = Vector2(0, 0)
+shader_parameter/country_uv_max = Vector2(1, 1)
+shader_parameter/target_country_color = Vector3(-1, -1, -1)
+shader_parameter/focus_radius = 0.42
+shader_parameter/focus_feather = 0.12
+shader_parameter/map_mode = 3
+shader_parameter/height_scale = 8.0
+shader_parameter/use_height_displacement = true
+shader_parameter/grass_albedo = ExtResource("8_grass")
+shader_parameter/grass_normal = ExtResource("9_grass_n")
+shader_parameter/sand_albedo = ExtResource("10_sand")
+shader_parameter/sand_normal = ExtResource("11_sand_n")
+shader_parameter/rock_albedo = ExtResource("12_rock")
+shader_parameter/rock_normal = ExtResource("13_rock_n")
+shader_parameter/detail_scale = 1200.0
+shader_parameter/detail_displacement = ExtResource("14_disp")
+shader_parameter/detail_displacement_scale = 3.0
+shader_parameter/overview_blur_px = 2.0
+shader_parameter/overview_dim = 0.2
+shader_parameter/fog_color = Color(0.35, 0.45, 0.55, 1)
+shader_parameter/fog_strength = 0.2
+shader_parameter/selected_country_idx = -1
+shader_parameter/selected_state_idx = -1
+shader_parameter/selection_color = Vector3(1, 1, 1)
+shader_parameter/portal_fade = 0.0
+shader_parameter/brightness_mult = 1.8
+shader_parameter/peak_intensity = 0.15
+shader_parameter/fresnel_strength = 0.1
+
+[sub_resource type="PlaneMesh" id="mesh_state"]
+material = SubResource("mat_micro")
+size = Vector2(420, 210)
+subdivide_width = 1024
+subdivide_depth = 1024
+
+[sub_resource type="BoxShape3D" id="box_col"]
+size = Vector3(420, 1, 210)
+
+[sub_resource type="ProceduralSkyMaterial" id="sky_mat"]
+sky_top_color = Color(0.4, 0.55, 0.7, 1)
+sky_horizon_color = Color(0.7, 0.72, 0.75, 1)
+
+[sub_resource type="Sky" id="sky"]
+sky_material = SubResource("sky_mat")
+
+[sub_resource type="Environment" id="env_micro"]
+background_mode = 2
+sky = SubResource("sky")
+ambient_light_source = 3
+ambient_light_color = Color(1, 1, 1, 1)
+ambient_light_energy = 1.8
+tonemap_mode = 2
+tonemap_exposure = 1.4
+ssao_enabled = true
+glow_enabled = true
+
+[node name="Micro" type="StaticBody3D" unique_id=1945295373]
+script = ExtResource("15_mapview")
+
+[node name="StateMap" type="MeshInstance3D" parent="." unique_id=1704784467]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, 0)
+mesh = SubResource("mesh_state")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1497338754]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+shape = SubResource("box_col")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=882608137]
+transform = Transform3D(0.866, -0.354, 0.354, 0, 0.707, 0.707, -0.5, -0.612, 0.612, 0, 30, 0)
+light_color = Color(1, 0.95, 0.88, 1)
+light_energy = 16.0
+shadow_enabled = true
+shadow_bias = 0.0
+sky_mode = 2
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=43770021]
+environment = SubResource("env_micro")
+
+[node name="Camera3D" type="Camera3D" parent="." unique_id=1982863214]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 15, 0)
+current = true
+script = ExtResource("16_camera")
+MinHeight = 2.0
+MaxHeight = 60.0
+OutPortalTarget = 2
+OutPortalHeight = 55.0
+EnableHorizontalWrap = false
+
+[node name="UI" type="Control" parent="." unique_id=541216137]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("17_hud")
+
+[node name="MarginContainer" type="MarginContainer" parent="UI" unique_id=1553400670]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+
+[node name="VBoxContainer" type="VBoxContainer" parent="UI/MarginContainer" unique_id=1826714294]
+layout_mode = 2
+
+[node name="DateLabel" type="Label" parent="UI/MarginContainer/VBoxContainer" unique_id=993825189]
+layout_mode = 2
+text = "Loading..."
+
+[node name="PopLabel" type="Label" parent="UI/MarginContainer/VBoxContainer" unique_id=1771543978]
+layout_mode = 2
+text = "Population: 0"
+
+[node name="StatusLabel" type="Label" parent="UI/MarginContainer/VBoxContainer" unique_id=1151856182]
+layout_mode = 2
+text = "Waiting for engine..."

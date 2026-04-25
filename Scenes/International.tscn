@@ -1,0 +1,225 @@
+[gd_scene format=3]
+
+[ext_resource type="Texture2D" path="res://Assets/Terrain/HYP_HR_SR_OB_DR.png" id="1_albedo"]
+[ext_resource type="Texture2D" path="res://Assets/Terrain/16_bit_dem_large.png" id="2_height"]
+[ext_resource type="Shader" path="res://Assets/Shaders/GlobalMapShader.gdshader" id="3_shader"]
+[ext_resource type="Shader" path="res://Assets/Shaders/WaterShader.gdshader" id="4_water"]
+[ext_resource type="Texture2D" path="res://Assets/Textures/Wood029_2K-PNG/Wood029_2K-PNG_Color.png" id="5_wood_col"]
+[ext_resource type="Texture2D" path="res://Assets/Textures/Wood029_2K-PNG/Wood029_2K-PNG_NormalDX.png" id="6_wood_nrm"]
+[ext_resource type="Texture2D" path="res://Assets/Textures/Wood029_2K-PNG/Wood029_2K-PNG_Roughness.png" id="7_wood_rgh"]
+[ext_resource type="Texture2D" path="res://Assets/Textures/Paper001_2K-PNG/Paper001_2K-PNG_Color.png" id="8_paper_col"]
+[ext_resource type="Texture2D" path="res://Assets/Textures/Paper001_2K-PNG/Paper001_2K-PNG_NormalDX.png" id="9_paper_nrm"]
+[ext_resource type="Texture2D" path="res://Assets/Textures/Paper001_2K-PNG/Paper001_2K-PNG_Roughness.png" id="10_paper_rgh"]
+[ext_resource type="Script" path="res://Scripts/Map/MapView.cs" id="11_mapview"]
+[ext_resource type="Script" path="res://Scripts/Camera/StrategyCamera.cs" id="12_camera"]
+[ext_resource type="Script" path="res://Scripts/UI/HUD.cs" id="13_hud"]
+[ext_resource type="Texture2D" path="res://Assets/Terrain/godot_id_map.png" id="14_idmap"]
+[ext_resource type="Texture2D" path="res://Assets/Textures/Foam003_2K-PNG/Foam003_2K-PNG_Color.png" id="15_foam_col"]
+[ext_resource type="Texture2D" path="res://Assets/Textures/Foam003_2K-PNG/Foam003_2K-PNG_NormalDX.png" id="16_foam_nrm"]
+[ext_resource type="Texture2D" path="res://Assets/Textures/Foam003_2K-PNG/Foam003_2K-PNG_NormalGL.png" id="17_foam_ngl"]
+[ext_resource type="Texture2D" path="res://Assets/Textures/Foam003_2K-PNG/Foam003_2K-PNG_Displacement.png" id="18_foam_disp"]
+[ext_resource type="Texture2D" path="res://Assets/Textures/Foam003_2K-PNG/Foam003_2K-PNG_Roughness.png" id="19_foam_rgh"]
+
+[sub_resource type="ShaderMaterial" id="mat_global"]
+shader = ExtResource("3_shader")
+shader_parameter/id_map = ExtResource("14_idmap")
+shader_parameter/height_map = ExtResource("2_height")
+shader_parameter/albedo_tex = ExtResource("1_albedo")
+shader_parameter/map_mode = 3
+shader_parameter/height_scale = 2.0
+shader_parameter/brightness = 1.0
+shader_parameter/contrast = 1.1
+shader_parameter/saturation = 1.1
+shader_parameter/grain_strength = 0.2
+shader_parameter/selected_country_idx = -1
+shader_parameter/selected_state_idx = -1
+shader_parameter/selection_color = Vector3(1, 1, 1)
+shader_parameter/portal_fade = 0.0
+
+[sub_resource type="ShaderMaterial" id="mat_ocean"]
+shader = ExtResource("4_water")
+shader_parameter/wave_speed = 0.05
+shader_parameter/edge_fade_power = 1.5
+shader_parameter/transmittence = 0.05
+shader_parameter/h_dist_trans_weight = 2.5
+shader_parameter/transmit_color = Color(0.02, 0.15, 0.25, 1)
+shader_parameter/depth_fade_distance = 15.0
+shader_parameter/surface_albedo = Color(0.06, 0.22, 0.38, 1)
+shader_parameter/surface_bottom = Color(0.015, 0.05, 0.18, 1)
+shader_parameter/opacity = 0.65
+shader_parameter/opacity_floor = 0.25
+shader_parameter/opacity_ceiling = 0.88
+shader_parameter/roughness = 0.18
+shader_parameter/height_scale = 0.5
+shader_parameter/amplitude1 = 1.2
+shader_parameter/amplitude2 = 0.3
+shader_parameter/v_noise_tile = 200
+shader_parameter/normal_noise_size = 51.2
+shader_parameter/normal_noise_speed = 0.03
+shader_parameter/v_normal_scale = 0.6
+shader_parameter/sky_color = Color(0.05, 0.05, 0.06, 1)
+shader_parameter/high_color = Color(0.35, 0.55, 0.7, 1)
+shader_parameter/low_color = Color(0.04, 0.1, 0.2, 1)
+shader_parameter/wave_color_range = 1.5
+shader_parameter/foamScale = 25.0
+shader_parameter/foamScrollSpeed = 0.2
+shader_parameter/foamEdgeBias = 0.05
+shader_parameter/foamFallOffDistance = 0.4
+shader_parameter/foamEdgeDistance = 0.2
+shader_parameter/vertex_noise_big = ExtResource("18_foam_disp")
+shader_parameter/vertex_noise_big2 = ExtResource("19_foam_rgh")
+shader_parameter/normal_noise = ExtResource("16_foam_nrm")
+shader_parameter/normal_noise2 = ExtResource("17_foam_ngl")
+shader_parameter/foamTexture = ExtResource("15_foam_col")
+
+[sub_resource type="PlaneMesh" id="mesh_map"]
+material = SubResource("mat_global")
+size = Vector2(540, 270)
+subdivide_width = 128
+subdivide_depth = 128
+center_offset = Vector3(0, 1, 0)
+
+[sub_resource type="PlaneMesh" id="mesh_ocean"]
+material = SubResource("mat_ocean")
+size = Vector2(540, 270)
+subdivide_width = 128
+subdivide_depth = 128
+
+[sub_resource type="StandardMaterial3D" id="mat_wood"]
+albedo_texture = ExtResource("5_wood_col")
+metallic = 0.15
+roughness_texture = ExtResource("7_wood_rgh")
+normal_enabled = true
+normal_scale = 16.0
+normal_texture = ExtResource("6_wood_nrm")
+
+[sub_resource type="PlaneMesh" id="mesh_table"]
+material = SubResource("mat_wood")
+size = Vector2(3000, 1000)
+center_offset = Vector3(0, -2, 0)
+
+[sub_resource type="StandardMaterial3D" id="mat_paper"]
+albedo_texture = ExtResource("8_paper_col")
+roughness_texture = ExtResource("10_paper_rgh")
+normal_enabled = true
+normal_texture = ExtResource("9_paper_nrm")
+
+[sub_resource type="PlaneMesh" id="mesh_paper"]
+material = SubResource("mat_paper")
+size = Vector2(1720, 370)
+center_offset = Vector3(0, -1, 0)
+
+[sub_resource type="BoxShape3D" id="box_collision"]
+size = Vector3(540, 1, 270)
+
+[sub_resource type="Environment" id="env_int"]
+background_mode = 1
+background_color = Color(0.05, 0.05, 0.06, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.6, 0.55, 0.5, 1)
+tonemap_mode = 2
+tonemap_exposure = 1.15
+ssao_enabled = true
+ssao_radius = 2.0
+ssao_intensity = 1.5
+glow_enabled = true
+glow_intensity = 0.4
+glow_bloom = 0.05
+
+[node name="International" type="StaticBody3D"]
+script = ExtResource("11_mapview")
+
+[node name="Table" type="MeshInstance3D" parent="."]
+mesh = SubResource("mesh_table")
+
+[node name="Paper" type="MeshInstance3D" parent="."]
+mesh = SubResource("mesh_paper")
+
+[node name="WorldMap" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
+mesh = SubResource("mesh_map")
+
+[node name="WorldMapLeft" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -540, 2, 0)
+mesh = SubResource("mesh_map")
+
+[node name="WorldMapRight" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 540, 2, 0)
+mesh = SubResource("mesh_map")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
+shape = SubResource("box_collision")
+
+[node name="Ocean" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.9, 0)
+mesh = SubResource("mesh_ocean")
+
+[node name="OceanLeft" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -540, 1.9, 0)
+mesh = SubResource("mesh_ocean")
+
+[node name="OceanRight" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 540, 1.9, 0)
+mesh = SubResource("mesh_ocean")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("env_int")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(-0.956298, -0.274418, 0.100942, -0.004321, 0.358449, 0.93354, -0.292362, 0.892306, -0.343969, 0, 40, 0)
+light_energy = 0.8
+shadow_enabled = true
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.5, 0.866025, 0, -0.866025, 0.5, 0, 300, 40)
+current = true
+script = ExtResource("12_camera")
+MinHeight = 25.0
+MaxHeight = 800.0
+ZoomSpeed = 15.0
+InPortalTarget = 2
+InPortalHeight = 30.0
+OutPortalTarget = 0
+OutPortalHeight = 700.0
+ResistanceRange = 15.0
+PortalScrollsRequired = 5
+MapWidth = 540.0
+LimitZ = Vector2(-200, 200)
+
+[node name="UI" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("13_hud")
+
+[node name="MarginContainer" type="MarginContainer" parent="UI"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="VBoxContainer" type="VBoxContainer" parent="UI/MarginContainer"]
+layout_mode = 2
+
+[node name="DateLabel" type="Label" parent="UI/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Loading..."
+
+[node name="PopLabel" type="Label" parent="UI/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Population: 0"
+
+[node name="StatusLabel" type="Label" parent="UI/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Waiting for engine..."

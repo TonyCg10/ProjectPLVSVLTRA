@@ -1,9 +1,0 @@
-[
-  { "id": "CUB-1365", "nameKey": "province.CUB-1365", "regionKey": "region.caribe", "countryId": "CUB" },
-  { "id": "CUB-1319", "nameKey": "province.CUB-1319", "regionKey": "region.caribe", "countryId": "CUB" },
-  { "id": "DOM-1964", "nameKey": "province.DOM-1964", "regionKey": "region.caribe", "countryId": "DOM" },
-  { "id": "DOM-1974", "nameKey": "province.DOM-1974", "regionKey": "region.caribe", "countryId": "DOM" },
-  { "id": "HTI-1386", "nameKey": "province.HTI-1386", "regionKey": "region.caribe", "countryId": "HTI" },
-  { "id": "JAM-1370", "nameKey": "province.JAM-1370", "regionKey": "region.caribe", "countryId": "JAM" },
-  { "id": "PRI-5260", "nameKey": "province.PRI-5260", "regionKey": "region.caribe", "countryId": "PRI" }
-]
