@@ -1,13 +1,42 @@
 [gd_scene format=3 uid="uid://dv81mto5c05cx"]
 
-[ext_resource type="Texture2D" path="res://data/assets/terrain/HYP_HR_SR_OB_DR.png" id="2_2eq0d"]
-[ext_resource type="Texture2D" path="res://data/assets/terrain/8k_earth_normal_map.png" id="4_ewfb4"]
-[ext_resource type="Texture2D" path="res://data/assets/terrain/16_bit_dem_large.png" id="4_wppug"]
-[ext_resource type="Shader" path="res://data/assets/shaders/GlobalMapShader.gdshader" id="7_wppug"]
-[ext_resource type="Script" path="res://Scripts/View/Map/MapController.cs" id="9_j2qug"]
+[ext_resource type="Texture2D" uid="uid://bjpn6230yrfnx" path="res://data/assets/terrain/HYP_HR_SR_OB_DR.png" id="2_2eq0d"]
+[ext_resource type="Texture2D" uid="uid://b1re6xbelsi05" path="res://data/assets/texture/Wood029_2K-PNG/Wood029_2K-PNG_Color.png" id="2_xbywg"]
+[ext_resource type="Texture2D" uid="uid://ewajahj546yh" path="res://data/assets/texture/Wood029_2K-PNG/Wood029_2K-PNG_NormalDX.png" id="3_elfld"]
+[ext_resource type="Texture2D" uid="uid://cyrf70gyhw6y1" path="res://data/assets/texture/Wood029_2K-PNG/Wood029_2K-PNG_Roughness.png" id="4_pdc55"]
+[ext_resource type="Texture2D" uid="uid://hwdw25vpeebj" path="res://data/assets/terrain/16_bit_dem_large.png" id="4_wppug"]
+[ext_resource type="Texture2D" uid="uid://d14nm6nab5bsd" path="res://data/assets/texture/Paper001_2K-PNG/Paper001_2K-PNG_Color.png" id="5_l8juu"]
+[ext_resource type="Texture2D" uid="uid://dfo2mcdjc2826" path="res://data/assets/texture/Paper001_2K-PNG/Paper001_2K-PNG_NormalDX.png" id="6_eqvtk"]
+[ext_resource type="Texture2D" uid="uid://bh4ddmcrnfhy" path="res://data/assets/texture/Paper001_2K-PNG/Paper001_2K-PNG_Roughness.png" id="7_f1ri8"]
+[ext_resource type="Shader" uid="uid://bimqpwmgndioj" path="res://data/assets/shaders/GlobalMapShader.gdshader" id="7_wppug"]
+[ext_resource type="Shader" uid="uid://7jihffvl0jxj" path="res://data/assets/shaders/WaterShader.gdshader" id="8_water_shader"]
+[ext_resource type="Script" uid="uid://bbkw20oen6he6" path="res://Scripts/View/Map/MapController.cs" id="9_j2qug"]
+[ext_resource type="Script" uid="uid://bwpy447srqbqp" path="res://Scripts/View/Camera/CameraManager.cs" id="10_cam"]
 
-[sub_resource type="BoxShape3D" id="BoxShape3D_twyp7"]
-size = Vector3(540, 1, 270)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_l8juu"]
+albedo_texture = ExtResource("2_xbywg")
+metallic = 0.15
+roughness_texture = ExtResource("4_pdc55")
+normal_enabled = true
+normal_scale = 16.0
+normal_texture = ExtResource("3_elfld")
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_eqvtk"]
+material = SubResource("StandardMaterial3D_l8juu")
+size = Vector2(3000, 1000)
+center_offset = Vector3(0, -2, 0)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_oohd8"]
+albedo_texture = ExtResource("5_l8juu")
+roughness_texture = ExtResource("7_f1ri8")
+normal_enabled = true
+normal_texture = ExtResource("6_eqvtk")
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_ur2cb"]
+material = SubResource("StandardMaterial3D_oohd8")
+size = Vector2(1720, 370)
+center_offset = Vector3(0, -1, 0)
 
 [sub_resource type="CompressedTexture2D" id="CompressedTexture2D_o4h1p"]
 load_path = "res://.godot/imported/godot_id_map.png-f8249629462c480f250e6c223b437d6e.ctex"
@@ -18,35 +47,110 @@ shader = ExtResource("7_wppug")
 shader_parameter/id_map = SubResource("CompressedTexture2D_o4h1p")
 shader_parameter/height_map = ExtResource("4_wppug")
 shader_parameter/albedo_tex = ExtResource("2_2eq0d")
-shader_parameter/normal_tex = ExtResource("4_ewfb4")
 shader_parameter/map_mode = 3
 shader_parameter/height_scale = 2.0
 shader_parameter/brightness = 1.0
 shader_parameter/contrast = 1.1
 shader_parameter/saturation = 1.1
-shader_parameter/detail_strength = 0.6
-shader_parameter/detail_scale = 500.0
+shader_parameter/grain_strength = 0.2
 shader_parameter/selected_country_idx = -1
 shader_parameter/selected_state_idx = -1
 shader_parameter/selection_color = Vector3(1, 1, 1)
 
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_ocean"]
+render_priority = 0
+shader = ExtResource("8_water_shader")
+shader_parameter/wave_speed = 1.0
+shader_parameter/edge_fade_power = 2.0
+shader_parameter/transmittence = 0.04
+shader_parameter/h_dist_trans_weight = 3.0
+shader_parameter/transmit_color = Color(0, 0.458824, 0.537255, 1)
+shader_parameter/depth_fade_distance = 5.0
+shader_parameter/foam_amount = 0.15
+shader_parameter/cloth_strength = 0.4
+shader_parameter/cloth_scale = 10.0
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_ocean"]
+material = SubResource("ShaderMaterial_ocean")
+size = Vector2(540, 270)
+subdivide_width = 128
+subdivide_depth = 128
+center_offset = Vector3(0, 0, 0)
+
 [sub_resource type="PlaneMesh" id="PlaneMesh_ewfb4"]
 material = SubResource("ShaderMaterial_32mi3")
 size = Vector2(540, 270)
-subdivide_width = 540
-subdivide_depth = 270
+subdivide_width = 128
+subdivide_depth = 128
 center_offset = Vector3(0, 1, 0)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_twyp7"]
+size = Vector3(540, 1, 270)
+
+[sub_resource type="Environment" id="Environment_ur2cb"]
+background_mode = 1
+background_color = Color(0.05, 0.05, 0.06, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.6, 0.55, 0.5, 1)
+tonemap_mode = 2
+tonemap_exposure = 1.15
+ssao_enabled = true
+ssao_radius = 2.0
+ssao_intensity = 1.5
+glow_enabled = true
+glow_intensity = 0.4
+glow_bloom = 0.05
 
 [node name="GlobalMap" type="StaticBody3D" unique_id=923616844]
 script = ExtResource("9_j2qug")
+
+[node name="Table" type="MeshInstance3D" parent="." unique_id=581573926]
+mesh = SubResource("PlaneMesh_eqvtk")
+
+[node name="Paper" type="MeshInstance3D" parent="." unique_id=673247197]
+mesh = SubResource("PlaneMesh_ur2cb")
+
+[node name="GlobalMap" type="MeshInstance3D" parent="." unique_id=1205818142]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
+mesh = SubResource("PlaneMesh_ewfb4")
+
+[node name="GlobalMapLeft" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -540, 2, 0)
+mesh = SubResource("PlaneMesh_ewfb4")
+
+[node name="GlobalMapRight" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 540, 2, 0)
+mesh = SubResource("PlaneMesh_ewfb4")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1220385529]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
 shape = SubResource("BoxShape3D_twyp7")
 
-[node name="GlobalMap" type="MeshInstance3D" parent="." unique_id=1205818142]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
-mesh = SubResource("PlaneMesh_ewfb4")
+[node name="Ocean" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.9, 0)
+mesh = SubResource("PlaneMesh_ocean")
+
+[node name="OceanLeft" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -540, 1.9, 0)
+mesh = SubResource("PlaneMesh_ocean")
+
+[node name="OceanRight" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 540, 1.9, 0)
+mesh = SubResource("PlaneMesh_ocean")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=10466083]
+environment = SubResource("Environment_ur2cb")
+
+[node name="Camera3D" type="Camera3D" parent="." unique_id=1832093465]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 300, 0)
+current = true
+script = ExtResource("10_cam")
+MinHeight = 100.0
+MaxHeight = 800.0
+InPortalTarget = 2
+InPortalHeight = 120.0
+OutPortalTarget = 0
+OutPortalHeight = 700.0
 
 [node name="UI" type="CanvasLayer" parent="." unique_id=997724891]
 

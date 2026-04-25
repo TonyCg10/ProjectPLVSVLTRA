@@ -20,30 +20,30 @@ public partial class PortalManager : Node
     private float _fadeDuration = 0.4f;
     
     public CameraManager.ZoomLevel CurrentLevel { get; set; } = CameraManager.ZoomLevel.International;
-    private CanvasLayer _fadeLayer;
-    private ColorRect _fadeRect;
-    
+
     public static int PendingCountryIdx = -1;
+    public static int ActiveCountryIdx = -1;
     public static int PendingStateIdx = -1;
 
     public override void _Ready()
     {
         Instance = this;
-        SetupFadeLayer();
         GD.Print("[PortalManager] Sistema de portales listo.");
     }
 
-    private void SetupFadeLayer()
+    private ShaderMaterial GetMapMaterial()
     {
-        _fadeLayer = new CanvasLayer { Layer = 100 };
-        _fadeRect = new ColorRect {
-            Color = new Color(0, 0, 0, 0),
-            MouseFilter = Control.MouseFilterEnum.Ignore
-        };
-        _fadeRect.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
-        
-        _fadeLayer.AddChild(_fadeRect);
-        AddChild(_fadeLayer);
+        var mapController = FindMapController();
+        if (mapController != null)
+        {
+            var mesh = mapController.GetNodeOrNull<MeshInstance3D>("GlobalMap");
+            if (mesh != null)
+            {
+                if (mesh.MaterialOverride is ShaderMaterial matOverride) return matOverride;
+                if (mesh.Mesh is PlaneMesh plane && plane.Material is ShaderMaterial planeMat) return planeMat;
+            }
+        }
+        return null;
     }
 
     public void RegisterCamera(CameraManager camera)
@@ -61,19 +61,32 @@ public partial class PortalManager : Node
 
         GD.Print($"[PortalManager] Cámara registrada en {CurrentLevel} y restaurada a {state.Pos}.");
 
-        // Fade OUT al entrar a nueva escena
-        var tween = CreateTween();
-        tween.TweenProperty(_fadeRect, "color:a", 0.0f, _fadeDuration);
+        // Fade IN del mapa al entrar a la nueva escena (de negro a visible)
+        var mat = GetMapMaterial();
+        if (mat != null)
+        {
+            mat.SetShaderParameter("portal_fade", 1.0f);
+            var tween = CreateTween();
+            tween.TweenProperty(mat, "shader_parameter/portal_fade", 0.0f, _fadeDuration);
+        }
     }
 
     private async void HandleZoomPortal(CameraManager.ZoomLevel targetLevel)
     {
         if (targetLevel == CurrentLevel) return;
 
-        // Iniciar Fade IN
-        var tween = CreateTween();
-        tween.TweenProperty(_fadeRect, "color:a", 1.0f, _fadeDuration);
-        await ToSignal(tween, "finished");
+        // Fade OUT del mapa (de visible a negro)
+        var mat = GetMapMaterial();
+        if (mat != null)
+        {
+            var tween = CreateTween();
+            tween.TweenProperty(mat, "shader_parameter/portal_fade", 1.0f, _fadeDuration);
+            await ToSignal(tween, "finished");
+        }
+        else
+        {
+            await ToSignal(GetTree().CreateTimer(_fadeDuration), "timeout");
+        }
 
         GD.Print($"[PortalManager] Portal: {CurrentLevel} -> {targetLevel}");
 
@@ -98,7 +111,7 @@ public partial class PortalManager : Node
         if (targetLevel > oldLevel) // Zoom IN (Bajamos de nivel)
         {
             // Entramos por el "techo" del nuevo nivel (ej: llegamos a Nacional desde arriba)
-            float entryHeight = (targetLevel == CameraManager.ZoomLevel.National) ? 130.0f : 45.0f;
+            float entryHeight = (targetLevel == CameraManager.ZoomLevel.National) ? 40.0f : 45.0f;
             nextState.Pos.Y = entryHeight;
         }
         else // Zoom OUT (Subimos de nivel)
@@ -113,28 +126,31 @@ public partial class PortalManager : Node
         if (targetLevel < oldLevel) // Zoom OUT
         {
             if (targetLevel == CameraManager.ZoomLevel.International) TransitionToInternational();
-            else TransitionToNational(-1);
+            else TransitionToNational(ActiveCountryIdx);
             return;
         }
 
-        // Zoom IN
-        var mapController = GetTree().Root.FindChild("Map", true, false) as MapController;
-        if (mapController == null)
-        {
-            foreach (var node in GetTree().Root.GetChildren())
-            {
-                mapController = node.FindChild("*", true, false) as MapController;
-                if (mapController != null) break;
-            }
-        }
+        // Zoom IN — Encontrar el MapController para saber qué país está en pantalla
+        MapController mapController = FindMapController();
 
         int cIdx = -1;
         int sIdx = -1;
         if (mapController != null)
         {
+            // Para Nacional: buscar país más cercano (funciona incluso sobre agua)
+            cIdx = mapController.GetNearestCountryToScreenCenter();
+            // Para Micro: necesitamos el estado exacto
             var target = mapController.GetTargetAtScreenCenter();
-            cIdx = target.countryIdx;
             sIdx = target.stateIdx;
+            
+            if (cIdx != -1)
+                GD.Print($"[PortalManager] País detectado: {DataService.CountryCatalog[cIdx]} (idx={cIdx})");
+            else
+                GD.PrintErr("[PortalManager] No se encontró ningún país cercano.");
+        }
+        else
+        {
+            GD.PrintErr("[PortalManager] No se encontró MapController en la escena actual.");
         }
 
         switch (targetLevel)
@@ -151,11 +167,30 @@ public partial class PortalManager : Node
 
     private void TransitionToNational(int countryIdx)
     {
-        if (countryIdx != -1 && countryIdx < DataService.CountryCatalog.Length)
-            GD.Print($"[PortalManager] Entrando a {DataService.CountryCatalog[countryIdx]}");
+        int resolvedCountryIdx = ResolveNationalCountryCandidate(countryIdx);
+        if (resolvedCountryIdx != -1)
+        {
+            ActiveCountryIdx = resolvedCountryIdx;
+            if (resolvedCountryIdx < DataService.CountryCatalog.Length)
+                GD.Print($"[PortalManager] Entrando a {DataService.CountryCatalog[resolvedCountryIdx]}");
+        }
         
-        PendingCountryIdx = countryIdx;
+        PendingCountryIdx = ActiveCountryIdx;
         GetTree().ChangeSceneToFile("res://Scenes/Map/MapNational.tscn");
+    }
+
+    private int ResolveNationalCountryCandidate(int requestedCountryIdx)
+    {
+        if (requestedCountryIdx >= 0 && requestedCountryIdx < DataService.CountryCatalog.Length)
+            return requestedCountryIdx;
+
+        if (ActiveCountryIdx >= 0 && ActiveCountryIdx < DataService.CountryCatalog.Length)
+            return ActiveCountryIdx;
+
+        if (DataService.CountryCatalog != null && DataService.CountryCatalog.Length > 0)
+            return 0;
+
+        return -1;
     }
 
     private void TransitionToMicro(int stateIdx)
@@ -164,5 +199,24 @@ public partial class PortalManager : Node
             GD.Print($"[PortalManager] Entrando a {DataService.StateCatalog[stateIdx]}");
             
         GetTree().ChangeSceneToFile("res://Scenes/Map/MapMicro.tscn");
+    }
+
+    /// <summary>
+    /// Busca recursivamente el MapController en el árbol de escena.
+    /// </summary>
+    private MapController FindMapController()
+    {
+        return FindNodeOfType<MapController>(GetTree().Root);
+    }
+
+    private static T FindNodeOfType<T>(Node root) where T : class
+    {
+        if (root is T match) return match;
+        foreach (var child in root.GetChildren())
+        {
+            var found = FindNodeOfType<T>(child);
+            if (found != null) return found;
+        }
+        return null;
     }
 }

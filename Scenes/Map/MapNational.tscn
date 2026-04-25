@@ -2,98 +2,256 @@
 
 [ext_resource type="Script" uid="uid://bwpy447srqbqp" path="res://Scripts/View/Camera/CameraManager.cs" id="1_cam"]
 [ext_resource type="Shader" uid="uid://cg7d55xenepin" path="res://data/assets/shaders/RegionalMapShader.gdshader" id="2_shader"]
+[ext_resource type="Texture2D" uid="uid://b1re6xbelsi05" path="res://data/assets/texture/Wood029_2K-PNG/Wood029_2K-PNG_Color.png" id="2_wd7uk"]
 [ext_resource type="Script" uid="uid://bbkw20oen6he6" path="res://Scripts/View/Map/MapController.cs" id="3_controller"]
+[ext_resource type="Texture2D" uid="uid://ewajahj546yh" path="res://data/assets/texture/Wood029_2K-PNG/Wood029_2K-PNG_NormalDX.png" id="3_xqrg3"]
 [ext_resource type="Texture2D" uid="uid://bjpn6230yrfnx" path="res://data/assets/terrain/HYP_HR_SR_OB_DR.png" id="4_1g1n0"]
+[ext_resource type="Texture2D" uid="uid://cyrf70gyhw6y1" path="res://data/assets/texture/Wood029_2K-PNG/Wood029_2K-PNG_Roughness.png" id="4_5op2x"]
 [ext_resource type="Texture2D" uid="uid://beg0uvlraun62" path="res://data/assets/terrain/godot_id_map.png" id="5_jbdpk"]
-[ext_resource type="Texture2D" uid="uid://b5nuh2hjt6qgr" path="res://data/assets/texture/Grass004_2K-JPG/Grass004_2K-JPG_Color.jpg" id="6_yfr6u"]
+[ext_resource type="Texture2D" uid="uid://d14nm6nab5bsd" path="res://data/assets/texture/Paper001_2K-PNG/Paper001_2K-PNG_Color.png" id="5_mddk1"]
+[ext_resource type="Texture2D" uid="uid://dfo2mcdjc2826" path="res://data/assets/texture/Paper001_2K-PNG/Paper001_2K-PNG_NormalDX.png" id="6_d03yn"]
 [ext_resource type="Texture2D" uid="uid://dm8t8kd3kjxrs" path="res://data/assets/texture/Grass004_2K-JPG/Grass004_2K-JPG_NormalDX.jpg" id="7_m7gl2"]
+[ext_resource type="Texture2D" uid="uid://bh4ddmcrnfhy" path="res://data/assets/texture/Paper001_2K-PNG/Paper001_2K-PNG_Roughness.png" id="7_oc5mx"]
+[ext_resource type="Shader" uid="uid://7jihffvl0jxj" path="res://data/assets/shaders/WaterShader.gdshader" id="8_oc5mx"]
 [ext_resource type="Texture2D" uid="uid://hwdw25vpeebj" path="res://data/assets/terrain/16_bit_dem_large.png" id="8_wd7uk"]
+[ext_resource type="Texture2D" uid="uid://cr3r8u2uuc6h2" path="res://data/assets/texture/Foam003_2K-PNG/Foam003_2K-PNG_Color.png" id="9_oohd8"]
 [ext_resource type="Texture2D" uid="uid://gy5xla757cyj" path="res://data/assets/terrain/8k_earth_normal_map.png" id="9_xqrg3"]
-[ext_resource type="Texture2D" uid="uid://doasjqghyfxkt" path="res://data/assets/texture/Rock058_2K-JPG/Rock058_2K-JPG_Color.jpg" id="10_5op2x"]
+[ext_resource type="Texture2D" uid="uid://b82sgrxeaky7v" path="res://data/assets/texture/Foam003_2K-PNG/Foam003_2K-PNG_NormalDX.png" id="10_asbj8"]
 [ext_resource type="Texture2D" uid="uid://i5hvshgn4kk4" path="res://data/assets/texture/Rock058_2K-JPG/Rock058_2K-JPG_NormalDX.jpg" id="11_mddk1"]
-[ext_resource type="Texture2D" uid="uid://bkf150xw88oji" path="res://data/assets/texture/Ground093C_2K-JPG/Ground093C_2K-JPG_Color.jpg" id="12_d03yn"]
+[ext_resource type="Texture2D" uid="uid://dx3dg6nng1jmj" path="res://data/assets/texture/Foam003_2K-PNG/Foam003_2K-PNG_NormalGL.png" id="11_v6hmr"]
+[ext_resource type="Texture2D" uid="uid://t1wf3uxjgcdd" path="res://data/assets/texture/Foam003_2K-PNG/Foam003_2K-PNG_Displacement.png" id="12_coqnw"]
+[ext_resource type="Texture2D" uid="uid://bkb5rcn1wwhqq" path="res://data/assets/texture/Foam003_2K-PNG/Foam003_2K-PNG_Roughness.png" id="13_dt1l3"]
 [ext_resource type="Texture2D" uid="uid://mbw1rtb5y6nn" path="res://data/assets/texture/Ground093C_2K-JPG/Ground093C_2K-JPG_NormalDX.jpg" id="13_oc5mx"]
+[ext_resource type="Texture2D" uid="uid://buoptatj3btva" path="res://data/assets/terrain/water_8k.png" id="14_water"]
+[ext_resource type="Texture2D" uid="uid://ue2iboghbdcv" path="res://data/assets/texture/Terrain001_2K-PNG/Terrain001_2K_Color.png" id="15"]
+[ext_resource type="Texture2D" uid="uid://ldrfylpijqbj" path="res://data/assets/texture/Terrain001_2K-PNG/Terrain001_2K_Soil.png" id="16"]
+[ext_resource type="Texture2D" uid="uid://d1mtr42hd127y" path="res://data/assets/texture/Terrain001_2K-PNG/Terrain001_2K_Details.png" id="17"]
+[ext_resource type="Texture2D" uid="uid://bu5dcem1pli8w" path="res://data/assets/texture/Terrain001_2K-PNG/Terrain001_2K.exr" id="18"]
+
+[ext_resource type="Texture2D" uid="uid://ckfllnyws6wrx" path="res://data/assets/terrain/splatmap_godot.png" id="splat_map_tex"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_20pc6"]
+albedo_texture = ExtResource("2_wd7uk")
+metallic = 0.15
+roughness_texture = ExtResource("4_5op2x")
+normal_enabled = true
+normal_scale = 16.0
+normal_texture = ExtResource("3_xqrg3")
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_mddk1"]
+material = SubResource("StandardMaterial3D_20pc6")
+size = Vector2(3000, 1000)
+center_offset = Vector3(0, -2, 0)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_oohd8"]
+albedo_texture = ExtResource("5_mddk1")
+roughness_texture = ExtResource("7_oc5mx")
+normal_enabled = true
+normal_texture = ExtResource("6_d03yn")
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_4jt0j"]
+material = SubResource("StandardMaterial3D_oohd8")
+size = Vector2(1720, 370)
+center_offset = Vector3(0, -1, 0)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_4jt0j"]
+render_priority = 0
+shader = ExtResource("8_oc5mx")
+shader_parameter/wave_speed = 1.0
+shader_parameter/edge_fade_power = 2.0
+shader_parameter/transmittence = 0.04
+shader_parameter/h_dist_trans_weight = 3.0
+shader_parameter/transmit_color = Color(0, 0.458824, 0.537255, 1)
+shader_parameter/depth_fade_distance = 5.0
+shader_parameter/surface_albedo = Color(0.121569, 0.419608, 0.521569, 1)
+shader_parameter/surface_bottom = Color(0.03137255, 0.101960786, 0.45490196, 1)
+shader_parameter/opacity = 0.999999977648
+shader_parameter/opacity_floor = 0.1
+shader_parameter/opacity_ceiling = 0.8
+shader_parameter/pixelate = false
+shader_parameter/roughness = 0.4
+shader_parameter/height_scale = 0.5
+shader_parameter/amplitude1 = 2.0
+shader_parameter/amplitude2 = 0.5
+shader_parameter/vertex_noise_big = ExtResource("12_coqnw")
+shader_parameter/vertex_noise_big2 = ExtResource("13_dt1l3")
+shader_parameter/v_noise_tile = 200
+shader_parameter/normal_noise = ExtResource("10_asbj8")
+shader_parameter/normal_noise2 = ExtResource("11_v6hmr")
+shader_parameter/normal_noise_size = 51.2
+shader_parameter/normal_noise_speed = 0.05
+shader_parameter/v_normal_scale = 1.0
+shader_parameter/normal_map_w = 256
+shader_parameter/sky_color = Color(0.32549, 0.490196, 0.611765, 1)
+shader_parameter/high_color = Color(0.2, 0.5, 0.6, 1)
+shader_parameter/low_color = Color(0, 0, 0, 1)
+shader_parameter/wave_color_range = 2.0
+shader_parameter/foamTexture = ExtResource("9_oohd8")
+shader_parameter/foamScale = 5.0
+shader_parameter/foamScrollSpeed = 0.10000000149012
+shader_parameter/foamEdgeBias = 0.1
+shader_parameter/foamFallOffDistance = 0.4
+shader_parameter/foamEdgeDistance = 0.2
+shader_parameter/shine_strength = 0.17
+shader_parameter/shine_shininess = 18.0
+shader_parameter/shadow = 0.72
+shader_parameter/shadow_width = 0.18
+shader_parameter/shadow_color = Color(0.705882, 0.705882, 0.705882, 1)
+shader_parameter/_specular_smoothness = 0.199
+shader_parameter/_specular_strength = 0.075
+shader_parameter/_glossiness = 0.067
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_asbj8"]
+material = SubResource("ShaderMaterial_4jt0j")
+size = Vector2(540, 270)
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_oohd8"]
 render_priority = 0
 shader = ExtResource("2_shader")
 shader_parameter/id_map = ExtResource("5_jbdpk")
-shader_parameter/country_lookup = ExtResource("5_jbdpk")
-shader_parameter/state_lookup = ExtResource("5_jbdpk")
 shader_parameter/height_map = ExtResource("8_wd7uk")
 shader_parameter/albedo_tex = ExtResource("4_1g1n0")
 shader_parameter/normal_tex = ExtResource("9_xqrg3")
+shader_parameter/water_map = ExtResource("14_water")
+shader_parameter/splat_map = ExtResource("splat_map_tex")
+shader_parameter/country_uv_min = Vector2(0, 0)
+shader_parameter/country_uv_max = Vector2(1, 1)
+shader_parameter/target_country_color = Vector3(-1, -1, -1)
 shader_parameter/map_mode = 3
-shader_parameter/height_scale = 15.0
-shader_parameter/grass_albedo = ExtResource("6_yfr6u")
+shader_parameter/height_scale = 5.0000002375
+shader_parameter/use_height_displacement = true
+shader_parameter/grass_albedo = ExtResource("15")
 shader_parameter/grass_normal = ExtResource("7_m7gl2")
-shader_parameter/sand_albedo = ExtResource("12_d03yn")
+shader_parameter/sand_albedo = ExtResource("16")
 shader_parameter/sand_normal = ExtResource("13_oc5mx")
-shader_parameter/rock_albedo = ExtResource("10_5op2x")
+shader_parameter/rock_albedo = ExtResource("17")
 shader_parameter/rock_normal = ExtResource("11_mddk1")
-shader_parameter/brightness = 1.0
-shader_parameter/contrast = 1.1
-shader_parameter/saturation = 1.1
-shader_parameter/detail_strength = 0.7
-shader_parameter/detail_scale = 1500.0
+shader_parameter/detail_scale = 800.0
+shader_parameter/detail_displacement = ExtResource("18")
+shader_parameter/detail_displacement_scale = 2.0
+shader_parameter/satellite_tint = 0.3
 shader_parameter/selected_country_idx = -1
 shader_parameter/selected_state_idx = -1
 shader_parameter/selection_color = Vector3(1, 1, 1)
+shader_parameter/portal_fade = 0.0
+shader_parameter/brightness_mult = 1.5
+shader_parameter/peak_intensity = 0.15
+shader_parameter/fresnel_strength = 0.1
+shader_parameter/sun_direction = Vector3(0.5, 1, 0.3)
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_vnt8a"]
 material = SubResource("ShaderMaterial_oohd8")
 size = Vector2(540, 270)
-subdivide_width = 511
-subdivide_depth = 511
-
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_national"]
-render_priority = 0
-shader = ExtResource("2_shader")
-shader_parameter/map_mode = 3
-shader_parameter/height_scale = 8.0
-shader_parameter/brightness = 1.0
-shader_parameter/contrast = 1.1
-shader_parameter/saturation = 1.1
-shader_parameter/detail_strength = 0.8
-shader_parameter/detail_scale = 800.0
-shader_parameter/selected_country_idx = -1
-shader_parameter/selected_state_idx = -1
-shader_parameter/selection_color = Vector3(1, 1, 1)
+subdivide_width = 1024
+subdivide_depth = 1024
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_twyp7"]
-size = Vector3(540, 20, 270)
+size = Vector3(540, 1, 270)
 
-[node name="MapNational" type="StaticBody3D"]
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_warm"]
+sky_top_color = Color(0.32549, 0.490196, 0.611765, 1)
+sky_horizon_color = Color(0.64625, 0.65575, 0.67075, 1)
+ground_bottom_color = Color(0, 0, 0, 1)
+ground_horizon_color = Color(0.64625, 0.65575, 0.67075, 1)
+
+[sub_resource type="Sky" id="Sky_warm"]
+sky_material = SubResource("ProceduralSkyMaterial_warm")
+
+[sub_resource type="Environment" id="Environment_warm"]
+background_mode = 2
+background_color = Color(1, 1, 1, 1)
+sky = SubResource("Sky_warm")
+ambient_light_source = 3
+ambient_light_color = Color(1, 1, 1, 1)
+ambient_light_energy = 1.5
+ambient_light_sky_contribution = 0.5
+reflected_light_source = 2
+tonemap_mode = 2
+tonemap_exposure = 1.3
+ssao_enabled = true
+ssao_radius = 2.0
+ssao_intensity = 1.5
+glow_enabled = true
+glow_intensity = 0.4
+glow_bloom = 0.05
+fog_enabled = true
+fog_light_color = Color(0.08, 0.08, 0.09, 1)
+volumetric_fog_enabled = true
+volumetric_fog_density = 0.015
+volumetric_fog_albedo = Color(0.1, 0.1, 0.1, 1)
+
+[node name="MapNational" type="StaticBody3D" unique_id=1609270920]
 script = ExtResource("3_controller")
 
-[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+[node name="Table" type="MeshInstance3D" parent="." unique_id=1329114255]
+mesh = SubResource("PlaneMesh_mddk1")
 
-[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
-transform = Transform3D(0.866025, -0.433013, 0.25, 0, 0.5, 0.866025, -0.5, -0.75, 0.433013, 0, 20, 0)
+[node name="Paper" type="MeshInstance3D" parent="." unique_id=2146608555]
+mesh = SubResource("PlaneMesh_4jt0j")
+
+[node name="Ocean" type="MeshInstance3D" parent="." unique_id=1440663504]
+mesh = SubResource("PlaneMesh_asbj8")
+
+[node name="OceanLeft" type="MeshInstance3D" parent="." unique_id=1242651298]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -540, 0, 0)
+mesh = SubResource("PlaneMesh_asbj8")
+
+[node name="OceanRight" type="MeshInstance3D" parent="." unique_id=2028916534]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 540, 0, 0)
+mesh = SubResource("PlaneMesh_asbj8")
+
+[node name="GlobalMap" type="MeshInstance3D" parent="." unique_id=957003646]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.099479675, 0.05511074, -0.041391373)
+mesh = SubResource("PlaneMesh_vnt8a")
+
+[node name="GlobalMapLeft" type="MeshInstance3D" parent="." unique_id=2086222418]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -539.9914, 0.05511074, -0.039779663)
+mesh = SubResource("PlaneMesh_vnt8a")
+
+[node name="GlobalMapRight" type="MeshInstance3D" parent="." unique_id=1067780017]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 540.0086, 0.05511074, -0.039779663)
+mesh = SubResource("PlaneMesh_vnt8a")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1134116526]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+shape = SubResource("BoxShape3D_twyp7")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1932141958]
+transform = Transform3D(0.8660253, -0.35355338, 0.3535538, 0, 0.70710725, 0.7071064, -0.50000024, -0.612372, 0.6123727, 0, 50, 0)
+light_color = Color(1, 0.92, 0.82, 1)
+light_energy = 2.0
 shadow_enabled = true
+shadow_bias = 0.03
+shadow_normal_bias = 1.0
+directional_shadow_blend_splits = true
 
-[node name="Camera3D" type="Camera3D" parent="."]
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=581916181]
+environment = SubResource("Environment_warm")
+
+[node name="Camera3D" type="Camera3D" parent="." unique_id=1832093465]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 40, 0)
 current = true
 script = ExtResource("1_cam")
 MinHeight = 5.0
-MaxHeight = 200.0
+MaxHeight = 350.0
 InPortalTarget = 3
 InPortalHeight = 10.0
 OutPortalTarget = 1
-OutPortalHeight = 180.0
+OutPortalHeight = 320.0
 
-[node name="GlobalMap" type="MeshInstance3D" parent="."]
-mesh = SubResource("PlaneMesh_vnt8a")
-surface_material_override/0 = SubResource("ShaderMaterial_national")
+[node name="UI" type="CanvasLayer" parent="." unique_id=2008679290]
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 10, 0)
-shape = SubResource("BoxShape3D_twyp7")
+[node name="HBox" type="HBoxContainer" parent="UI" unique_id=1694418346]
+offset_left = 843.0
+offset_top = 84.0
+offset_right = 1273.0
+offset_bottom = 124.0
+theme_override_constants/separation = 10
 
-[node name="Label3D" type="Label3D" parent="." unique_id=138740201]
-transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 5, 0)
-pixel_size = 0.1
-text = "NIVEL NACIONAL"
-font_size = 128
-outline_size = 32
+[node name="BtnEstados" type="Button" parent="UI/HBox" unique_id=675749679]
+layout_mode = 2
+text = "Estados"
+
+[node name="BtnNatural" type="Button" parent="UI/HBox" unique_id=1285226572]
+layout_mode = 2
+text = "Natural"

@@ -15,7 +15,9 @@ public partial class CameraManager : Camera3D
 	[Export] public float YawSensitivity = 0.2f;   // Eje Y (Izquierda/Derecha)
 	[Export] public float PitchSensitivity = 0.2f; // Eje X (Arriba/Abajo)
 	[Export] public float MinPitch = -85.0f; // Límite mirando hacia abajo
-	[Export] public float MaxPitch = -10.0f; // Límite mirando al horizonte
+	[Export] public float MaxPitch = -35.0f; // Límite mirando al horizonte (más estricto para no ver el vacío)
+	[Export] public float MinYaw = -25.0f;   // Límite de giro a la izquierda
+	[Export] public float MaxYaw = 25.0f;    // Límite de giro a la derecha
 
 	[ExportGroup("Zoom")]
 	[Export] public float ZoomSpeed = 10.0f;
@@ -30,10 +32,13 @@ public partial class CameraManager : Camera3D
 	[Export] public float OutPortalHeight = 95.0f;
 	[Export] public float ResistanceRange = 10.0f;
 	[Export] public float MinZoomMultiplier = 0.2f;
+	[Export] public int PortalScrollsRequired = 4;
+	[Export] public float PortalActivationWindowSec = 0.7f;
+	[Export] public float PortalSnapEpsilon = 0.35f;
 
 	[ExportGroup("Límites y Mundo Infinito (Wrap)")]
 	[Export] public float MapWidth = 540.0f; 
-	[Export] public Vector2 LimitZ = new Vector2(-100f, 100f);
+	[Export] public Vector2 LimitZ = new Vector2(-100f, 100f); 
 
 	public System.Action<ZoomLevel> OnZoomPortalTriggered;
 	public ZoomLevel CurrentZoomLevel = ZoomLevel.International;
@@ -41,6 +46,9 @@ public partial class CameraManager : Camera3D
 	private Vector3 _targetPosition;
 	private Vector3 _targetRotation;
 	private float _zoomTravelVelocity = 0.0f;
+	private int _inPortalCharge = 0;
+	private int _outPortalCharge = 0;
+	private double _lastPortalChargeTimeSec = -100.0;
 
 	public override void _Ready()
 	{
@@ -131,8 +139,7 @@ public partial class CameraManager : Camera3D
 		// 6. Indicador de Portal en el Suelo
 		UpdateGroundIndicator(minRes);
 
-		// 7. Detectar Portales de Zoom
-		CheckZoomPortals();
+		// 7. Detectar Portales de Zoom (Automático eliminado, ahora es manual en _Input)
 	}
 
 	private MeshInstance3D _groundIndicator;
@@ -175,33 +182,27 @@ public partial class CameraManager : Camera3D
 		if (matAlpha != null)
 		{
 			// Solo mostramos si estamos bajando hacia un portal IN
-			bool showing = resistance < 1.0f && _targetPosition.Y < GlobalPosition.Y;
+			bool showing = resistance < 1.0f;
 			float targetAlpha = showing ? (tension * 0.8f) : 0.0f;
 			matAlpha.AlbedoColor = new Color(1, 1, 1, targetAlpha);
 		}
 	}
 
-	private void CheckZoomPortals()
-	{
-		// 1. Check IN (Hacia abajo)
-		if (InPortalTarget != PortalType.None && _targetPosition.Y <= InPortalHeight)
-		{
-			TriggerPortal((ZoomLevel)((int)InPortalTarget - 1));
-		}
-		// 2. Check OUT (Hacia arriba)
-		else if (OutPortalTarget != PortalType.None && _targetPosition.Y >= OutPortalHeight)
-		{
-			TriggerPortal((ZoomLevel)((int)OutPortalTarget - 1));
-		}
-	}
-
 	private void TriggerPortal(ZoomLevel target)
 	{
+		ResetPortalCharge();
 		if (target != CurrentZoomLevel)
 		{
 			CurrentZoomLevel = target;
 			OnZoomPortalTriggered?.Invoke(CurrentZoomLevel);
 		}
+	}
+
+	private void ResetPortalCharge()
+	{
+		_inPortalCharge = 0;
+		_outPortalCharge = 0;
+		_lastPortalChargeTimeSec = -100.0;
 	}
 
 	public override void _Input(InputEvent @event)
@@ -212,7 +213,7 @@ public partial class CameraManager : Camera3D
 			_targetRotation.Y -= mouseMotion.Relative.X * YawSensitivity;
 			_targetRotation.X -= mouseMotion.Relative.Y * PitchSensitivity;
 			
-			// Limitamos la X para no dar vueltas de campana
+			// Limitamos la X (Pitch) para no ver el vacío, pero permitimos giros 360 (Yaw)
 			_targetRotation.X = Mathf.Clamp(_targetRotation.X, MinPitch, MaxPitch);
 		}
 
@@ -236,12 +237,72 @@ public partial class CameraManager : Camera3D
 			if (isWheelUp || isWheelDown)
 			{
 				Vector3 zoomDir = GlobalTransform.Basis.Z;
-				float currentResist = GetZoomResistance(isWheelUp);
-				float direction = isWheelUp ? -1.0f : 1.0f;
-
-				_targetPosition += zoomDir * direction * ZoomSpeed * currentResist;
+				bool zoomingOut = isWheelDown; // Hacia abajo es alejarse (OUT), Hacia arriba es acercarse (IN)
 				
-				GD.Print($"[Camera] Zoom {(isWheelUp ? "IN" : "OUT")}. Height: {_targetPosition.Y:F2}. Resistance: {currentResist:F2}");
+				PortalType targetP = zoomingOut ? OutPortalTarget : InPortalTarget;
+				float targetT = zoomingOut ? OutPortalHeight : InPortalHeight;
+				double nowSec = Time.GetTicksMsec() / 1000.0;
+
+				if (targetP != PortalType.None)
+				{
+					// Exigir "presión" de scroll en el umbral para evitar salto inmediato de escena.
+					bool atLimit = zoomingOut
+						? (_targetPosition.Y >= targetT - PortalSnapEpsilon)
+						: (_targetPosition.Y <= targetT + PortalSnapEpsilon);
+
+					if (atLimit)
+					{
+						if (nowSec - _lastPortalChargeTimeSec > PortalActivationWindowSec)
+							ResetPortalCharge();
+
+						_lastPortalChargeTimeSec = nowSec;
+						if (zoomingOut) _outPortalCharge++;
+						else _inPortalCharge++;
+
+						int currentCharge = zoomingOut ? _outPortalCharge : _inPortalCharge;
+						GD.Print($"[Camera] Presión de portal: {currentCharge}/{PortalScrollsRequired}");
+
+						if (currentCharge >= PortalScrollsRequired)
+							TriggerPortal((ZoomLevel)((int)targetP - 1));
+
+						return; // Bloquear movimiento
+					}
+				}
+				else
+				{
+					ResetPortalCharge();
+				}
+
+				float currentResist = GetZoomResistance(zoomingOut);
+				float direction = zoomingOut ? 1.0f : -1.0f;
+				Vector3 step = zoomDir * direction * ZoomSpeed * currentResist;
+
+				// 3. Frenado en seco: Evitar cruzar el umbral en este movimiento
+				if (targetP != PortalType.None && step.Y != 0.0f)
+				{
+					float proposedY = _targetPosition.Y + step.Y;
+					if (zoomingOut && proposedY > targetT)
+					{
+						float fraction = (targetT - _targetPosition.Y) / step.Y;
+						step *= fraction;
+					}
+					else if (!zoomingOut && proposedY < targetT)
+					{
+						float fraction = (targetT - _targetPosition.Y) / step.Y;
+						step *= fraction;
+					}
+				}
+
+				_targetPosition += step;
+				if (targetP != PortalType.None)
+				{
+					// Snap suave al umbral para evitar rebotes numéricos.
+					if (zoomingOut && _targetPosition.Y > targetT) _targetPosition.Y = targetT;
+					if (!zoomingOut && _targetPosition.Y < targetT) _targetPosition.Y = targetT;
+				}
+
+				ResetPortalCharge();
+				GD.Print($"[Camera] Zoom {(zoomingOut ? "OUT" : "IN")}. Height: {_targetPosition.Y:F2}. Resistance: {currentResist:F2}");
 			}
 		}
 	}
@@ -260,8 +321,10 @@ public partial class CameraManager : Camera3D
 			float dist = Mathf.Abs(y - targetT);
 			if (dist < ResistanceRange)
 			{
-				float factor = dist / ResistanceRange;
-				multiplier = Mathf.Lerp(MinZoomMultiplier, 1.0f, factor);
+				// Curva de frenado no lineal: al acercarse cuesta cada vez más.
+				float factor = Mathf.Clamp(dist / ResistanceRange, 0.0f, 1.0f);
+				float curved = factor * factor;
+				multiplier = Mathf.Lerp(MinZoomMultiplier, 1.0f, curved);
 			}
 		}
 

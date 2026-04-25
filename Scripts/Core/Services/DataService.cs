@@ -35,6 +35,7 @@ public static class DataService
 
     public static ImageTexture CountryLookup;
     public static ImageTexture StateLookup;
+    public static Texture2DArray WorldDataTex;
     
     // Caché de límites UV para enfoque nacional
     private static Dictionary<int, Rect2> _countryBoundsCache = new();
@@ -90,13 +91,15 @@ public static class DataService
             _countryBoundsCache[id] = new Rect2(minU[id], minV[id], maxU[id] - minU[id], maxV[id] - minV[id]);
         }
         GD.Print($"[DataService] Límites de {_countryBoundsCache.Count} países calculados.");
-    }
+    }   
 
     public static Color[] CountryPalette;
     public static Color[] StatePalette;
 
     private static void LoadMapData(string dataFolder)
     {
+        _countryBoundsCache.Clear();
+
         // 1. Cargar Catálogos
         string statesPath = Path.Combine(dataFolder, "map", "catalogs", "catalog_states.json");
         StateCatalog = JsonSerializer.Deserialize<string[]>(File.ReadAllText(statesPath));
@@ -132,6 +135,9 @@ public static class DataService
         // (Tu binario actual tiene ~10.7M)
         int texSize = 4096;
         int totalNodes = Nodes.Length;
+        int maxNodes = texSize * texSize;
+        if (totalNodes > maxNodes)
+            throw new InvalidOperationException($"map_nodes.bin excede la capacidad de lookup actual ({totalNodes} > {maxNodes}).");
 
         // Buffers de bytes para alta velocidad (mucho más rápidos que SetPixel)
         byte[] countryData = new byte[texSize * texSize * 3];
@@ -175,11 +181,65 @@ public static class DataService
         mapMaterial.SetShaderParameter("country_lookup", CountryLookup);
         mapMaterial.SetShaderParameter("state_lookup", StateLookup);
         
+        if (WorldDataTex != null)
+            mapMaterial.SetShaderParameter("world_data_tex", WorldDataTex);
+        
         // OPTIMIZACIÓN: Liberamos las imágenes temporales de la RAM principal
         imgCountry.Dispose();
         imgState.Dispose();
         
         GD.Print($"[DataService] Shader actualizado con {totalNodes} nodos.");
+    }
+
+    public static void LoadWorldDataArray(string dataFolder)
+    {
+        string binPath = Path.Combine(dataFolder, "map", "world_data.bin");
+        if (!File.Exists(binPath)) 
+        {
+            GD.PrintErr("[DataService] world_data.bin no encontrado.");
+            return;
+        }
+
+        byte[] allBytes = File.ReadAllBytes(binPath);
+        int totalNodes = allBytes.Length / 4;
+        
+        // Detección inteligente de resolución
+        int w = 1024;
+        int h = 1024;
+        
+        // Si el tamaño total es divisible por un bloque de 2048x2048, lo usamos.
+        // Si no, lo más probable es que sean múltiples capas de 1024x1024.
+        if (allBytes.Length >= 16777216 && allBytes.Length % 16777216 == 0) 
+        { 
+            w = 2048; h = 2048; 
+        }
+        else if (allBytes.Length >= 8388608 && allBytes.Length % 8388608 == 0) 
+        { 
+            w = 2048; h = 1024; 
+        }
+        
+        int layerSize = w * h * 4;
+        int numLayers = allBytes.Length / layerSize;
+
+        if (numLayers == 0) {
+            GD.PrintErr($"[DataService] world_data.bin tiene un tamaño inválido ({allBytes.Length} bytes).");
+            return;
+        }
+
+        var images = new Godot.Collections.Array<Image>();
+        for (int i = 0; i < numLayers; i++)
+        {
+            byte[] layerBytes = new byte[layerSize];
+            Array.Copy(allBytes, i * layerSize, layerBytes, 0, layerSize);
+            
+            Image img = Image.CreateFromData(w, h, false, Image.Format.Rg16, layerBytes);
+            images.Add(img);
+        }
+
+        var texArray = new Texture2DArray();
+        texArray.CreateFromImages(images);
+        WorldDataTex = texArray;
+        GD.Print($"[DataService] world_data.bin cargado: {w}x{h} con {numLayers} capas.");
     }
 
     private static Color[] GeneratePalette(int size, int seed)
@@ -226,6 +286,7 @@ public static class DataService
 
         // 2.3 Cargar Datos del Mapa (Binario + Catálogos)
         LoadMapData(dataFolder);
+        LoadWorldDataArray(dataFolder);
 
         // 2.5 Países (Countries)
         var countries = LoadJson<List<CountryDto>>(Path.Combine(dataFolder, "countries.json")) ?? new();
@@ -269,8 +330,13 @@ public static class DataService
         // 3.5 Mapear Nodos a Provincias y crear provincias faltantes del catálogo
         for (int i = 0; i < Nodes.Length; i++)
         {
-            string stateId   = StateCatalog[Nodes[i].StateIdx];
-            string countryId = CountryCatalog[Nodes[i].CountryIdx];
+            int stateIdx = Nodes[i].StateIdx;
+            int countryIdx = Nodes[i].CountryIdx;
+            if (stateIdx < 0 || stateIdx >= StateCatalog.Length || countryIdx < 0 || countryIdx >= CountryCatalog.Length)
+                continue;
+
+            string stateId   = StateCatalog[stateIdx];
+            string countryId = CountryCatalog[countryIdx];
 
             if (!provinceMap.TryGetValue(stateId, out var p))
             {

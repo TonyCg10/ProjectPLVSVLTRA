@@ -1,20 +1,38 @@
 shader_type spatial;
+render_mode cull_back, diffuse_burley, specular_schlick_ggx;
 
-// Datos base
+// =========================================
+// TEXTURAS GLOBALES
+// =========================================
 uniform sampler2D id_map : filter_nearest, hint_default_black;
 uniform sampler2D country_lookup : filter_nearest;
 uniform sampler2D state_lookup : filter_nearest;
 uniform sampler2D height_map : filter_linear;
+uniform sampler2D albedo_tex : source_color;
+uniform sampler2D normal_tex : hint_normal;
+uniform sampler2D water_map : filter_linear;
+uniform sampler2DArray world_data_tex;
+uniform sampler2D splat_map : source_color;
 
-// Datos visuales
-uniform sampler2D albedo_tex : source_color; 
-uniform sampler2D normal_tex : hint_normal;  
+// =========================================
+// RECORTE DE PAÍS
+// =========================================
+uniform vec2 country_uv_min = vec2(0.0, 0.0);
+uniform vec2 country_uv_max = vec2(1.0, 1.0);
+uniform vec3 target_country_color = vec3(-1.0);
+uniform float focus_radius : hint_range(0.1, 0.8) = 0.42;
+uniform float focus_feather : hint_range(0.01, 0.3) = 0.12;
 
-// Configuración
-uniform int map_mode : hint_range(0, 3) = 3; 
+// =========================================
+// CONFIGURACIÓN
+// =========================================
+uniform int map_mode : hint_range(0, 3) = 3;
 uniform float height_scale : hint_range(0.0, 50.0) = 15.0;
+uniform bool use_height_displacement = true;
 
-// Texturas 2K de Detalle (Splatting)
+// =========================================
+// TEXTURAS DE TERRENO
+// =========================================
 uniform sampler2D grass_albedo : source_color, hint_default_white;
 uniform sampler2D grass_normal : hint_normal;
 uniform sampler2D sand_albedo : source_color, hint_default_white;
@@ -22,114 +40,170 @@ uniform sampler2D sand_normal : hint_normal;
 uniform sampler2D rock_albedo : source_color, hint_default_white;
 uniform sampler2D rock_normal : hint_normal;
 
-// Ajustes de imagen
-uniform float brightness : hint_range(0.0, 2.0) = 1.0;
-uniform float contrast : hint_range(0.5, 2.0) = 1.1;
-uniform float saturation : hint_range(0.0, 2.0) = 1.1;
-
-// Detalle Procedural (Tiling)
-uniform float detail_strength : hint_range(0.0, 1.0) = 0.7;
-uniform float detail_scale : hint_range(1.0, 3000.0) = 1500.0;
+uniform float detail_scale : hint_range(10.0, 5000.0) = 600.0;
+uniform sampler2D detail_displacement : filter_linear;
+uniform float detail_displacement_scale : hint_range(0.0, 10.0) = 1.0;
+uniform float overview_blur_px : hint_range(0.0, 6.0) = 2.0;
+uniform float overview_dim : hint_range(0.0, 1.0) = 0.45;
+uniform vec3 fog_color : source_color = vec3(0.05, 0.08, 0.11);
+uniform float fog_strength : hint_range(0.0, 1.0) = 0.6;
 
 // Selección
 uniform int selected_country_idx = -1;
 uniform int selected_state_idx = -1;
 uniform vec3 selection_color = vec3(1.0, 1.0, 1.0);
 
+// Transición
+uniform float portal_fade : hint_range(0.0, 1.0) = 0.0;
+
+group_uniforms Effects;
+uniform float brightness_mult : hint_range(0.0, 5.0) = 1.5;
+uniform float peak_intensity : hint_range(0.0, 2.0) = 0.15;
+uniform float fresnel_strength : hint_range(0.0, 1.0) = 0.1;
+
 varying float v_height;
-varying vec2 v_uv;
+varying vec2 v_world_uv;
+varying vec2 v_local_uv;
+varying float v_water;
+varying vec3 v_world_pos;
 
-// =========================================
-// SISTEMA DE RUIDO SUAVE (RESTAURADO)
-// =========================================
-float hash(vec2 p) {
-    p = fract(p * vec2(123.34, 456.21));
-    p += dot(p, p + 45.32);
-    return fract(p.x * p.y);
-}
-
-float noise(vec2 x) {
-    vec2 p = floor(x);
-    vec2 f = fract(x);
-    f = f * f * (3.0 - 2.0 * f);
-    return mix(mix(hash(p), hash(p + vec2(1.0, 0.0)), f.x),
-               mix(hash(p + vec2(0.0, 1.0)), hash(p + vec2(1.0, 1.0)), f.x), f.y);
-}
-
-float fbm(vec2 x) {
-    float v = 0.0;
-    float a = 0.5;
-    mat2 rot = mat2(vec2(0.8, 0.6), vec2(-0.6, 0.8));
-    for (int i = 0; i < 4; ++i) {
-        v += a * noise(x);
-        x = rot * x * 2.0 + vec2(10.0);
-        a *= 0.5;
-    }
-    return v;
+vec3 sample_blur5(sampler2D tex, vec2 uv, vec2 px, float radius_px) {
+    if (radius_px <= 0.001) return texture(tex, uv).rgb;
+    vec2 d = px * radius_px;
+    vec3 c = texture(tex, uv).rgb * 0.34;
+    c += texture(tex, uv + vec2(d.x, 0.0)).rgb * 0.165;
+    c += texture(tex, uv - vec2(d.x, 0.0)).rgb * 0.165;
+    c += texture(tex, uv + vec2(0.0, d.y)).rgb * 0.165;
+    c += texture(tex, uv - vec2(0.0, d.y)).rgb * 0.165;
+    return c;
 }
 
 void vertex() {
-    v_uv = UV;
-    v_height = texture(height_map, UV).r;
+    v_local_uv = UV;
+    v_world_uv = mix(country_uv_min, country_uv_max, UV);
+    v_height = texture(height_map, v_world_uv).r;
+    v_water = texture(water_map, v_world_uv).r;
+
+    float land_h = 0.0;
+    float current_h = 0.0;
     
-    // Desplazamiento regional suave
-    VERTEX.y += v_height * height_scale;
+    if (use_height_displacement) {
+        land_h = v_height * (1.0 - step(0.5, v_water));
+        float detail_h = texture(detail_displacement, UV).r * detail_displacement_scale;
+        current_h = (land_h * height_scale) + detail_h;
+        VERTEX.y += current_h;
+    }
+
+    // Normales dinámicas para relieve PBR
+    float d = 0.002;
     
-    // Normal simple hacia arriba para evitar NaNs en el sombreado
-    NORMAL = vec3(0.0, 1.0, 0.0);
+    float h_right_base = texture(height_map, v_world_uv + vec2(d, 0.0)).r;
+    float h_right_det  = texture(detail_displacement, UV + vec2(d, 0.0)).r * detail_displacement_scale;
+    float h_right = (h_right_base * (1.0 - step(0.5, texture(water_map, v_world_uv + vec2(d, 0.0)).r)) * height_scale) + h_right_det;
+    
+    float h_up_base    = texture(height_map, v_world_uv + vec2(0.0, d)).r;
+    float h_up_det     = texture(detail_displacement, UV + vec2(0.0, d)).r * detail_displacement_scale;
+    float h_up    = (h_up_base * (1.0 - step(0.5, texture(water_map, v_world_uv + vec2(0.0, d)).r)) * height_scale) + h_up_det;
+
+    float world_d = d * 540.0; 
+    vec3 tangent = normalize(vec3(world_d, h_right - current_h, 0.0));
+    vec3 binormal = normalize(vec3(0.0, h_up - current_h, world_d));
+    NORMAL = normalize(cross(binormal, tangent));
+    
+    v_world_pos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 }
 
 void fragment() {
-    vec4 id_sample = texture(id_map, v_uv);
-    int node_id = int(round(id_sample.r * 255.0)) + 
-                  (int(round(id_sample.g * 255.0)) * 256) + 
-                  (int(round(id_sample.b * 255.0)) * 65536);
+    vec2 overview_uv = UV;
+    float center_dist = distance(overview_uv, vec2(0.5));
+    float focus_mask = 1.0 - smoothstep(focus_radius, focus_radius + focus_feather, center_dist);
+
+    // 1. Muestreo de Identidad y Agua
+    float warped_water = texture(water_map, v_world_uv).r;
+    bool is_water = warped_water > 0.16;
     
+    vec4 id_sample = texture(id_map, v_world_uv);
+    int node_id = int(round(id_sample.r * 255.0)) +
+                  (int(round(id_sample.g * 255.0)) * 256) +
+                  (int(round(id_sample.b * 255.0)) * 65536);
+
     int array_idx = node_id - 1;
     ivec2 data_coords = ivec2(array_idx % 4096, array_idx / 4096);
     
-    // 1. Color Base (Satélite) - Protegido
-    vec3 col_base = texture(albedo_tex, v_uv).rgb;
-    col_base = clamp(col_base * brightness, 0.0, 1.0);
-    col_base = mix(vec3(0.5), col_base, saturation);
+    // Aislamiento de País (Opcional, para efectos específicos)
+    bool inside_country = (target_country_color.x < 0.0) || (distance(id_sample.rgb, target_country_color) < 0.01);
+
+    // 2. Fronteras
+    ivec2 id_ts = textureSize(id_map, 0);
+    vec2 id_ps = 1.0 / vec2(id_ts);
+    vec4 n_right = texture(id_map, v_world_uv + vec2(id_ps.x, 0.0) * 1.5);
+    vec4 n_up    = texture(id_map, v_world_uv + vec2(0.0, id_ps.y) * 1.5);
+    float border = (distance(id_sample, n_right) > 0.01 || distance(id_sample, n_up) > 0.01) ? 1.0 : 0.0;
+
+    // 3. Terreno Base enfocado + overview global
+    vec3 satellite_focus = texture(albedo_tex, v_world_uv).rgb;
+    vec2 world_px = 1.0 / vec2(textureSize(albedo_tex, 0));
+    vec3 satellite_overview = sample_blur5(albedo_tex, overview_uv, world_px, overview_blur_px);
     
-    // 2. Detalle de Texturas (Solo si están asignadas y no estamos en modo político)
-    float h = v_height;
-    vec2 detail_uv = v_uv * detail_scale;
+    // 4. Detalle de Terreno (Splatmap)
+    // El detalle debe vivir en el espacio local del plano nacional para
+    // mantener nitidez aunque el país real sea muy pequeño en el atlas mundial.
+    vec2 detail_uv = v_local_uv * detail_scale;
+    vec3 splat = texture(splat_map, v_world_uv).rgb;
     
-    if (map_mode == 3 && h > 0.01) {
-        float rock_mask = smoothstep(0.4, 0.6, h);
-        float veg_mask = smoothstep(0.05, 0.2, col_base.g - col_base.r);
-        
-        vec3 grass = texture(grass_albedo, detail_uv).rgb;
-        vec3 rock = texture(rock_albedo, detail_uv).rgb;
-        
-        // Mezcla de detalle muy sutil para no "quemar" el blanco
-        vec3 detail = mix(grass, rock, rock_mask);
-        col_base = mix(col_base, col_base * detail * 1.2, detail_strength * 0.5);
+    vec3 tex_grass = texture(grass_albedo, detail_uv).rgb;
+    vec3 tex_sand  = texture(sand_albedo,  detail_uv).rgb;
+    vec3 tex_rock  = texture(rock_albedo,  detail_uv).rgb;
+    
+    float total_w = splat.r + splat.g + splat.b + 0.0001;
+    vec3 terrain_detail = (tex_grass * splat.r + tex_sand * splat.g + tex_rock * splat.b) / total_w;
+    
+    // Mezcla Satélite + Detalle
+    vec3 final_terrain_focus = mix(satellite_focus, terrain_detail, step(0.1, total_w) * 0.5);
+    vec3 final_terrain_overview = mix(satellite_overview, fog_color, fog_strength) * (1.0 - overview_dim * 0.5);
+    
+    // 5. Modos de Mapa
+    vec3 final_color = final_terrain_focus;
+    if (map_mode == 1 || map_mode == 2) {
+        vec3 col_pol = texelFetch(country_lookup, data_coords, 0).rgb;
+        if (map_mode == 2) col_pol = texelFetch(state_lookup, data_coords, 0).rgb;
+        final_color = mix(final_color, col_pol, 0.4);
+    }
+    
+    // Fronteras suaves
+    if (border > 0.5 && (map_mode == 1 || map_mode == 2)) {
+        final_color = mix(final_color, vec3(0.05), 0.5);
     }
 
-    // 3. Modos Políticos
-    vec3 final_color = col_base;
-    if (map_mode != 3) {
-        vec3 col_pol;
-        if (map_mode == 1) col_pol = texelFetch(country_lookup, data_coords, 0).rgb;
-        else if (map_mode == 2) col_pol = texelFetch(state_lookup, data_coords, 0).rgb;
-        else col_pol = vec3(h);
-        
-        final_color = mix(col_base, col_pol, 0.4);
+    // 6. Costa/agua con interacción visual suave
+    vec2 water_ps = 1.0 / vec2(textureSize(water_map, 0));
+    float w_right = texture(water_map, v_world_uv + vec2(water_ps.x, 0.0)).r;
+    float w_up = texture(water_map, v_world_uv + vec2(0.0, water_ps.y)).r;
+    float shoreline = (abs(warped_water - w_right) + abs(warped_water - w_up)) * 8.0;
+    shoreline = clamp(shoreline, 0.0, 1.0);
+    if (is_water) {
+        final_color = mix(final_color, vec3(0.78, 0.86, 0.92), shoreline * 0.55);
+    } else {
+        final_color = mix(final_color, vec3(0.92, 0.92, 0.86), shoreline * 0.2);
     }
 
-    // 4. Bordes de Seguridad
-    ivec2 ts = textureSize(id_map, 0);
-    if (ts.x > 0 && (map_mode == 1 || map_mode == 2)) {
-        vec2 ps = 1.0 / vec2(ts);
-        vec4 n1 = texture(id_map, v_uv + vec2(ps.x, 0.0) * 2.0);
-        if (distance(id_sample, n1) > 0.01) {
-            final_color = mix(final_color, vec3(1.0), 0.5);
-        }
-    }
+    // 7. Mezcla: mundo completo difuminado + región enfocada nítida
+    vec3 composed = mix(final_terrain_overview, final_color, focus_mask);
+    composed = mix(composed, composed * (1.0 - overview_dim), 1.0 - focus_mask);
+    vec3 out_col = composed * brightness_mult;
+    
+    // Picos de montaña
+    float peaks = smoothstep(0.25, 0.5, v_height);
+    out_col += peaks * peak_intensity;
 
-    ALBEDO = clamp(final_color, vec3(0.0), vec3(1.0));
-    ROUGHNESS = 0.8;
+    // 8. Output Final
+    ALBEDO = mix(out_col, vec3(0.0), portal_fade);
+    
+    METALLIC = 0.0;
+    ROUGHNESS = is_water ? 0.05 : 0.7; // Un poco menos rugoso para brillar mejor
+    SPECULAR = is_water ? 0.9 : 0.1;
+    
+    if (is_water) {
+        ALPHA = 0.3 + (0.7 * portal_fade); // El agua siempre tiene algo de presencia
+    }
 }

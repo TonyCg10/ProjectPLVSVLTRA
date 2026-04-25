@@ -9,6 +9,7 @@ uniform sampler2D height_map : filter_linear;
 
 // Datos visuales
 uniform sampler2D albedo_tex : source_color; 
+uniform sampler2DArray world_data_tex; 
 
 // Configuración
 uniform int map_mode : hint_range(0, 3) = 3; 
@@ -26,6 +27,9 @@ uniform float grain_strength : hint_range(0.0, 1.0) = 0.2;
 uniform int selected_country_idx = -1;
 uniform int selected_state_idx = -1;
 uniform vec3 selection_color = vec3(1.0, 1.0, 1.0);
+
+// Transición
+uniform float portal_fade : hint_range(0.0, 1.0) = 0.0;
 
 // =========================================
 // SISTEMA DE RUIDO SUAVE (RESTAURADO)
@@ -99,5 +103,9 @@ void fragment() {
         final_col = mix(final_col, vec3(1.0), 0.3);
     }
 
-    ALBEDO = final_col;
+    // Ocultar clones lejanos
+    float dist_to_cam = distance(NODE_POSITION_WORLD.xz, CAMERA_POSITION_WORLD.xz);
+    float fade_out = smoothstep(350.0, 550.0, dist_to_cam);
+    ALBEDO = mix(final_col, vec3(0.0), portal_fade);
+    ALBEDO = mix(ALBEDO, vec3(0.0), fade_out);
 }
