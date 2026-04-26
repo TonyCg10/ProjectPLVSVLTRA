@@ -494,3 +494,8 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# Assets pesados
+Assets/Terrain/
+Assets/Textures/
+Data/Map/world_data.bin
