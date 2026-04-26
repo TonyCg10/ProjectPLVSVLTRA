@@ -14,6 +14,7 @@ public static class MapBuilder
     private const float WorldMapHeight = 270f;
     private const float NationalMeshWidth = 420f;
     private const float MicroMeshWidth = 420f;
+    private const float SmallCountryMinSpan = 0.02f;
 
     public static void BuildNationalView(MapView mapView, int countryIdx)
     {
@@ -22,9 +23,11 @@ public static class MapBuilder
         var bounds = MapDataService.GetCountryBounds(countryIdx);
         if (bounds.W < 0.0001f && bounds.H < 0.0001f) return;
 
-        float margin = MapDataService.ScaleConfig.GetMargin(Mathf.Max(bounds.W, bounds.H));
+        float span = Mathf.Max(bounds.W, bounds.H);
+        float margin = MapDataService.ScaleConfig.GetMargin(span);
         Vector2 uvMin = new(Mathf.Max(0f, bounds.MinU - margin), Mathf.Max(0f, bounds.MinV - margin));
         Vector2 uvMax = new(Mathf.Min(1f, bounds.MinU + bounds.W + margin), Mathf.Min(1f, bounds.MinV + bounds.H + margin));
+        ExpandWindowToMinSpan(ref uvMin, ref uvMax, span);
         mapView.SetUVWindow(uvMin, uvMax);
 
         float worldW = (uvMax.X - uvMin.X) * WorldMapWidth;
@@ -86,6 +89,7 @@ public static class MapBuilder
         if (mat == null) return;
         mat.SetShaderParameter("country_uv_min", uvMin);
         mat.SetShaderParameter("country_uv_max", uvMax);
+        MapTextureService.InjectTextures(mat);
 
         float uvSpan = Mathf.Max(uvMax.X - uvMin.X, uvMax.Y - uvMin.Y);
 
@@ -104,9 +108,11 @@ public static class MapBuilder
 
         mat.SetShaderParameter("focus_radius", 0.48f);
         mat.SetShaderParameter("focus_feather", 0.18f);
+        mat.SetShaderParameter("enable_global_overview", false);
         mat.SetShaderParameter("brightness_mult", 1.4f);
         mat.SetShaderParameter("fog_strength", 0.15f);
         mat.SetShaderParameter("overview_dim", 0.15f);
+        mat.SetShaderParameter("political_edge_aa", 0.8f);
 
         Color col = MapTextureService.GetCountryColor(cIdx);
         mat.SetShaderParameter("selection_color", new Vector3(col.R, col.G, col.B));
@@ -138,9 +144,11 @@ public static class MapBuilder
 
         if (bounds.W < 0.0001f && bounds.H < 0.0001f) return;
 
-        float margin = MapDataService.ScaleConfig.GetMargin(Mathf.Max(bounds.W, bounds.H));
+        float span = Mathf.Max(bounds.W, bounds.H);
+        float margin = MapDataService.ScaleConfig.GetMargin(span);
         Vector2 uvMin = new(Mathf.Max(0f, bounds.MinU - margin), Mathf.Max(0f, bounds.MinV - margin));
         Vector2 uvMax = new(Mathf.Min(1f, bounds.MinU + bounds.W + margin), Mathf.Min(1f, bounds.MinV + bounds.H + margin));
+        ExpandWindowToMinSpan(ref uvMin, ref uvMax, span);
         mapView.SetUVWindow(uvMin, uvMax);
 
         float worldW = (uvMax.X - uvMin.X) * WorldMapWidth;
@@ -171,6 +179,7 @@ public static class MapBuilder
         if (mat == null) return;
         mat.SetShaderParameter("country_uv_min", uvMin);
         mat.SetShaderParameter("country_uv_max", uvMax);
+        MapTextureService.InjectTextures(mat);
 
         float uvSpan = Mathf.Max(uvMax.X - uvMin.X, uvMax.Y - uvMin.Y);
 
@@ -187,11 +196,33 @@ public static class MapBuilder
 
         mat.SetShaderParameter("focus_radius", 0.48f);
         mat.SetShaderParameter("focus_feather", 0.15f);
+        mat.SetShaderParameter("enable_global_overview", false);
         mat.SetShaderParameter("brightness_mult", 1.5f);
         mat.SetShaderParameter("fog_strength", 0.1f);
         mat.SetShaderParameter("overview_dim", 0.1f);
+        mat.SetShaderParameter("political_edge_aa", 0.8f);
 
         Color col = MapTextureService.GetCountryColor(cIdx);
         mat.SetShaderParameter("selection_color", new Vector3(col.R, col.G, col.B));
+    }
+
+    private static void ExpandWindowToMinSpan(ref Vector2 uvMin, ref Vector2 uvMax, float sourceSpan)
+    {
+        // For tiny countries/states, force a minimum zoom window so they occupy more screen area.
+        if (sourceSpan >= SmallCountryMinSpan) return;
+
+        Vector2 center = (uvMin + uvMax) * 0.5f;
+        float half = SmallCountryMinSpan * 0.5f;
+        Vector2 newMin = center - new Vector2(half, half);
+        Vector2 newMax = center + new Vector2(half, half);
+
+        // Clamp to world UV bounds while keeping window size stable where possible.
+        if (newMin.X < 0f) { newMax.X -= newMin.X; newMin.X = 0f; }
+        if (newMin.Y < 0f) { newMax.Y -= newMin.Y; newMin.Y = 0f; }
+        if (newMax.X > 1f) { newMin.X -= (newMax.X - 1f); newMax.X = 1f; }
+        if (newMax.Y > 1f) { newMin.Y -= (newMax.Y - 1f); newMax.Y = 1f; }
+
+        uvMin = new Vector2(Mathf.Clamp(newMin.X, 0f, 1f), Mathf.Clamp(newMin.Y, 0f, 1f));
+        uvMax = new Vector2(Mathf.Clamp(newMax.X, 0f, 1f), Mathf.Clamp(newMax.Y, 0f, 1f));
     }
 }

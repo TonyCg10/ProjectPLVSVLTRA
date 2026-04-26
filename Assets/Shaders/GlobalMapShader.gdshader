@@ -35,6 +35,7 @@ uniform float portal_fade : hint_range(0.0, 1.0) = 0.0;
 uniform float border_width : hint_range(1.0, 5.0) = 1.5;
 uniform vec3 border_color_country : source_color = vec3(0.08, 0.08, 0.06);
 uniform vec3 border_color_state : source_color = vec3(0.15, 0.12, 0.10);
+uniform float political_edge_aa : hint_range(0.0, 2.0) = 1.0;
 
 // =========================================
 // NOISE SYSTEM
@@ -65,6 +66,17 @@ float fbm(vec2 x) {
     return v;
 }
 
+int decode_node_id(vec3 enc) {
+    return int(round(enc.r * 255.0)) +
+           (int(round(enc.g * 255.0)) * 256) +
+           (int(round(enc.b * 255.0)) * 65536);
+}
+
+ivec2 node_coords(int node_id) {
+    int idx = max(node_id - 1, 0);
+    return ivec2(idx % 4096, idx / 4096);
+}
+
 void vertex() {
     float h = texture(height_map, UV).r;
     VERTEX.y += h * height_scale;
@@ -73,9 +85,7 @@ void vertex() {
 void fragment() {
     // 1. Sample node identity
     vec4 id_sample = texture(id_map, UV);
-    int node_id = int(round(id_sample.r * 255.0)) +
-                  (int(round(id_sample.g * 255.0)) * 256) +
-                  (int(round(id_sample.b * 255.0)) * 65536);
+    int node_id = decode_node_id(id_sample.rgb);
 
     int array_idx = node_id - 1;
     ivec2 data_coords = ivec2(array_idx % 4096, array_idx / 4096);
@@ -90,61 +100,54 @@ void fragment() {
     float grayscale = dot(col_nat, vec3(0.299, 0.587, 0.114));
     col_nat = mix(vec3(grayscale), col_nat, saturation);
 
-    // 3. Political color from lookup textures (each pixel = country/state color)
-    vec3 col_country = texelFetch(country_lookup, data_coords, 0).rgb;
-    vec3 col_state = texelFetch(state_lookup, data_coords, 0).rgb;
-
-    // 4. Detect POLITICAL borders (country or state boundaries, not node boundaries)
+    // 3. Political color with 4-tap subpixel AA
     vec2 ps = 1.0 / vec2(textureSize(id_map, 0));
-    float country_border = 0.0;
-    float state_border = 0.0;
+    vec2 aa_off = ps * (0.5 * political_edge_aa);
+    vec2 uv0 = UV + vec2(-aa_off.x, -aa_off.y);
+    vec2 uv1 = UV + vec2( aa_off.x, -aa_off.y);
+    vec2 uv2 = UV + vec2(-aa_off.x,  aa_off.y);
+    vec2 uv3 = UV + vec2( aa_off.x,  aa_off.y);
 
-    // Sample 4 neighbors and compare their LOOKUP color (political identity)
-    for (float d = 1.0; d <= border_width; d += 1.0) {
-        // Right neighbor
-        vec4 nb_r = texture(id_map, UV + vec2(ps.x * d, 0.0));
-        int nid_r = int(round(nb_r.r * 255.0)) + (int(round(nb_r.g * 255.0)) * 256) + (int(round(nb_r.b * 255.0)) * 65536);
-        ivec2 nc_r = ivec2((nid_r - 1) % 4096, (nid_r - 1) / 4096);
+    ivec2 c0 = node_coords(decode_node_id(texture(id_map, uv0).rgb));
+    ivec2 c1 = node_coords(decode_node_id(texture(id_map, uv1).rgb));
+    ivec2 c2 = node_coords(decode_node_id(texture(id_map, uv2).rgb));
+    ivec2 c3 = node_coords(decode_node_id(texture(id_map, uv3).rgb));
 
-        // Up neighbor
-        vec4 nb_u = texture(id_map, UV + vec2(0.0, ps.y * d));
-        int nid_u = int(round(nb_u.r * 255.0)) + (int(round(nb_u.g * 255.0)) * 256) + (int(round(nb_u.b * 255.0)) * 65536);
-        ivec2 nc_u = ivec2((nid_u - 1) % 4096, (nid_u - 1) / 4096);
+    vec3 cc0 = texelFetch(country_lookup, c0, 0).rgb;
+    vec3 cc1 = texelFetch(country_lookup, c1, 0).rgb;
+    vec3 cc2 = texelFetch(country_lookup, c2, 0).rgb;
+    vec3 cc3 = texelFetch(country_lookup, c3, 0).rgb;
+    vec3 col_country = (cc0 + cc1 + cc2 + cc3) * 0.25;
 
-        // Compare country colors
-        vec3 nb_country_r = texelFetch(country_lookup, nc_r, 0).rgb;
-        vec3 nb_country_u = texelFetch(country_lookup, nc_u, 0).rgb;
-        if (distance(col_country, nb_country_r) > 0.02 || distance(col_country, nb_country_u) > 0.02) {
-            country_border = 1.0;
-        }
+    vec3 sc0 = texelFetch(state_lookup, c0, 0).rgb;
+    vec3 sc1 = texelFetch(state_lookup, c1, 0).rgb;
+    vec3 sc2 = texelFetch(state_lookup, c2, 0).rgb;
+    vec3 sc3 = texelFetch(state_lookup, c3, 0).rgb;
+    vec3 col_state = (sc0 + sc1 + sc2 + sc3) * 0.25;
 
-        // Compare state colors
-        vec3 nb_state_r = texelFetch(state_lookup, nc_r, 0).rgb;
-        vec3 nb_state_u = texelFetch(state_lookup, nc_u, 0).rgb;
-        if (distance(col_state, nb_state_r) > 0.02 || distance(col_state, nb_state_u) > 0.02) {
-            state_border = 1.0;
-        }
-    }
+    float c_var = max(max(distance(cc0, cc1), distance(cc0, cc2)), distance(cc0, cc3));
+    float s_var = max(max(distance(sc0, sc1), distance(sc0, sc2)), distance(sc0, sc3));
+    float country_border = smoothstep(0.03, 0.12, c_var);
+    float state_border = smoothstep(0.03, 0.12, s_var);
 
     // 5. Final color composition
     vec3 final_col;
     if (map_mode == 1) {
         // Country mode: solid political color blended with natural
         final_col = mix(col_nat, col_country, 0.55);
-        if (country_border > 0.5) final_col = border_color_country;
+        final_col = mix(final_col, border_color_country, country_border);
     } else if (map_mode == 2) {
         // State mode: solid political color blended with natural
         final_col = mix(col_nat, col_state, 0.55);
-        if (state_border > 0.5) final_col = border_color_state;
-        // Also show country borders as thicker/darker lines
-        if (country_border > 0.5) final_col = border_color_country;
+        final_col = mix(final_col, border_color_state, state_border);
+        final_col = mix(final_col, border_color_country, country_border);
     } else if (map_mode == 0) {
         // Height/node debug
         final_col = vec3(texture(height_map, UV).r);
     } else {
         // Natural mode (3) — show country borders subtly
         final_col = col_nat;
-        if (country_border > 0.5) final_col = mix(final_col, border_color_country, 0.3);
+        final_col = mix(final_col, border_color_country, country_border * 0.3);
     }
 
     // 6. Clone fade

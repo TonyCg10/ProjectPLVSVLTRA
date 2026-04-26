@@ -13,7 +13,7 @@ public static class MapTextureService
 {
     public static ImageTexture CountryLookup { get; private set; }
     public static ImageTexture StateLookup { get; private set; }
-    public static Texture2DArray WorldDataTex { get; private set; }
+    public static ImageTexture WorldDataTex { get; private set; }
 
     /// <summary>
     /// Generates country and state lookup textures from MapDataService palettes
@@ -62,17 +62,20 @@ public static class MapTextureService
         StateLookup = ImageTexture.CreateFromImage(imgState);
 
         // Inject into shader
-        material.SetShaderParameter("country_lookup", CountryLookup);
-        material.SetShaderParameter("state_lookup", StateLookup);
-
-        if (WorldDataTex != null)
-            material.SetShaderParameter("world_data_tex", WorldDataTex);
-
-        // Free temp CPU images
-        imgCountry.Dispose();
-        imgState.Dispose();
+        InjectTextures(material);
 
         GD.Print($"[MapTextureService] Shader updated with {totalNodes} nodes.");
+    }
+
+    /// <summary>
+    /// Injects all generated textures into the provided shader material.
+    /// Call this from MapBuilder or other scripts to ensure textures are bound.
+    /// </summary>
+    public static void InjectTextures(ShaderMaterial material)
+    {
+        if (CountryLookup != null) material.SetShaderParameter("country_lookup", CountryLookup);
+        if (StateLookup != null)   material.SetShaderParameter("state_lookup",   StateLookup);
+        if (WorldDataTex != null)  material.SetShaderParameter("world_data_lookup", WorldDataTex);
     }
 
     /// <summary>
@@ -92,32 +95,31 @@ public static class MapTextureService
         MapDataService.ScanCountryBounds(pixels, w, h);
     }
 
-    /// <summary>
-    /// Loads world_data.bin into a Texture2DArray for GPU access.
-    /// </summary>
     public static void LoadWorldDataTexture(string dataFolder)
     {
         var result = MapDataService.LoadWorldDataRaw(dataFolder);
         if (result == null) return;
 
         var (data, w, h, numLayers) = result.Value;
-        int layerSize = w * h * 4;
+        
+        // We pack all data into a single 2D texture for simplicity in the shader.
+        // If numLayers > 1, we assume it's a tiled set that can fit in a larger texture,
+        // but for now, we'll just support the first layer or assume 1:1 node mapping.
+        // Actually, the best way is to treat it as a linear array of nodes.
+        
+        int totalNodes = MapDataService.Nodes.Length;
+        int texSize = 4096;
+        if (totalNodes > texSize * texSize)
+            GD.PushWarning($"[MapTextureService] world_data.bin exceeds 4096x4096! Clipping.");
 
-        var images = new Godot.Collections.Array<Image>();
-        for (int i = 0; i < numLayers; i++)
-        {
-            byte[] layerBytes = new byte[layerSize];
-            Array.Copy(data, i * layerSize, layerBytes, 0, layerSize);
+        byte[] packedData = new byte[texSize * texSize * 4];
+        int bytesToCopy = Math.Min(data.Length, packedData.Length);
+        Array.Copy(data, packedData, bytesToCopy);
 
-            Image img = Image.CreateFromData(w, h, false, Image.Format.Rg16, layerBytes);
-            images.Add(img);
-        }
+        Image img = Image.CreateFromData(texSize, texSize, false, Image.Format.Rgba8, packedData);
+        WorldDataTex = ImageTexture.CreateFromImage(img);
 
-        var texArray = new Texture2DArray();
-        texArray.CreateFromImages(images);
-        WorldDataTex = texArray;
-
-        GD.Print($"[MapTextureService] Texture2DArray created: {w}x{h} with {numLayers} layers.");
+        GD.Print($"[MapTextureService] world_data_tex (2D) created from {totalNodes} nodes.");
     }
 
     /// <summary>

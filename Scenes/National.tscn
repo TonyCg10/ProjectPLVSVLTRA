@@ -10,6 +10,7 @@
 [ext_resource type="Texture2D" uid="uid://ckfllnyws6wrx" path="res://Assets/Terrain/splatmap_godot.png" id="8_splat"]
 [ext_resource type="Texture2D" uid="uid://b5nuh2hjt6qgr" path="res://Assets/Textures/Grass004_2K-JPG/Grass004_2K-JPG_Color.jpg" id="9_grass_col"]
 [ext_resource type="Texture2D" uid="uid://dm8t8kd3kjxrs" path="res://Assets/Textures/Grass004_2K-JPG/Grass004_2K-JPG_NormalDX.jpg" id="10_grass_nrm"]
+[ext_resource type="Texture2D" uid="uid://cfnvd0tfv4u1f" path="res://Assets/Terrain/country_lookup.png" id="10_pl2v0"]
 [ext_resource type="Texture2D" uid="uid://ldrfylpijqbj" path="res://Assets/Textures/Terrain001_2K-PNG/Terrain001_2K_Soil.png" id="11_sand_col"]
 [ext_resource type="Texture2D" uid="uid://mbw1rtb5y6nn" path="res://Assets/Textures/Ground093C_2K-JPG/Ground093C_2K-JPG_NormalDX.jpg" id="12_sand_nrm"]
 [ext_resource type="Texture2D" uid="uid://d1mtr42hd127y" path="res://Assets/Textures/Terrain001_2K-PNG/Terrain001_2K_Details.png" id="13_rock_col"]
@@ -22,6 +23,7 @@
 [ext_resource type="Texture2D" uid="uid://dfo2mcdjc2826" path="res://Assets/Textures/Paper001_2K-PNG/Paper001_2K-PNG_NormalDX.png" id="20_paper_nrm"]
 [ext_resource type="Texture2D" uid="uid://bh4ddmcrnfhy" path="res://Assets/Textures/Paper001_2K-PNG/Paper001_2K-PNG_Roughness.png" id="21_paper_rgh"]
 [ext_resource type="Texture2D" uid="uid://cr3r8u2uuc6h2" path="res://Assets/Textures/Foam003_2K-PNG/Foam003_2K-PNG_Color.png" id="22_foam_col"]
+[ext_resource type="Texture2D" uid="uid://damden6bpal2r" path="res://Assets/Terrain/state_lookup.png" id="22_ny1eh"]
 [ext_resource type="Texture2D" uid="uid://b82sgrxeaky7v" path="res://Assets/Textures/Foam003_2K-PNG/Foam003_2K-PNG_NormalDX.png" id="23_foam_nrm"]
 [ext_resource type="Texture2D" uid="uid://dx3dg6nng1jmj" path="res://Assets/Textures/Foam003_2K-PNG/Foam003_2K-PNG_NormalGL.png" id="24_foam_ngl"]
 [ext_resource type="Texture2D" uid="uid://t1wf3uxjgcdd" path="res://Assets/Textures/Foam003_2K-PNG/Foam003_2K-PNG_Displacement.png" id="25_foam_disp"]
@@ -58,6 +60,8 @@ center_offset = Vector3(0, -1, 0)
 render_priority = 0
 shader = ExtResource("1_shader")
 shader_parameter/id_map = ExtResource("4_idmap")
+shader_parameter/country_lookup = ExtResource("10_pl2v0")
+shader_parameter/state_lookup = ExtResource("22_ny1eh")
 shader_parameter/height_map = ExtResource("5_height")
 shader_parameter/albedo_tex = ExtResource("3_albedo")
 shader_parameter/normal_tex = ExtResource("6_normal")
@@ -69,7 +73,7 @@ shader_parameter/target_country_color = Vector3(-1, -1, -1)
 shader_parameter/focus_radius = 0.42
 shader_parameter/focus_feather = 0.12
 shader_parameter/map_mode = 3
-shader_parameter/height_scale = 4.00000019
+shader_parameter/height_scale = 1.0000000475
 shader_parameter/use_height_displacement = true
 shader_parameter/grass_albedo = ExtResource("9_grass_col")
 shader_parameter/grass_normal = ExtResource("10_grass_nrm")
@@ -80,10 +84,21 @@ shader_parameter/rock_normal = ExtResource("14_rock_nrm")
 shader_parameter/detail_scale = 800.000037525
 shader_parameter/detail_displacement = ExtResource("15_detail_disp")
 shader_parameter/detail_displacement_scale = 2.0
+shader_parameter/procedural_biome_strength = 0.75
+shader_parameter/detail_contrast = 1.25
+shader_parameter/satellite_tint_strength = 0.06
+shader_parameter/macro_variation_strength = 0.12
 shader_parameter/overview_blur_px = 2.0
 shader_parameter/overview_dim = 0.25
+shader_parameter/enable_global_overview = false
 shader_parameter/fog_color = Color(0.35, 0.45, 0.55, 1)
 shader_parameter/fog_strength = 0.3
+shader_parameter/political_edge_aa = 1.0
+shader_parameter/coastline_aa = 1.25
+shader_parameter/ocean_deep_color = Color(0.05, 0.16, 0.3, 1)
+shader_parameter/ocean_shallow_color = Color(0.24, 0.42, 0.56, 1)
+shader_parameter/border_color_country = Color(0.17, 0.16, 0.13, 1)
+shader_parameter/border_color_state = Color(0.24, 0.21, 0.18, 1)
 shader_parameter/selected_country_idx = -1
 shader_parameter/selected_state_idx = -1
 shader_parameter/selection_color = Vector3(1, 1, 1)
@@ -95,8 +110,8 @@ shader_parameter/fresnel_strength = 0.1
 [sub_resource type="PlaneMesh" id="mesh_country"]
 material = SubResource("mat_regional")
 size = Vector2(540, 270)
-subdivide_width = 1024
-subdivide_depth = 1024
+subdivide_width = 2048
+subdivide_depth = 2048
 
 [sub_resource type="BoxShape3D" id="box_collision"]
 size = Vector3(540, 1, 270)
@@ -115,9 +130,9 @@ shader_parameter/surface_bottom = Color(0.02, 0.06, 0.22, 1)
 shader_parameter/opacity = 0.7
 shader_parameter/opacity_floor = 0.3
 shader_parameter/opacity_ceiling = 0.92
-shader_parameter/pixelate = true
+shader_parameter/pixelate = false
 shader_parameter/roughness = 0.15
-shader_parameter/height_scale = 0.0
+shader_parameter/height_scale = 1.0
 shader_parameter/amplitude1 = 1.5
 shader_parameter/amplitude2 = 0.4
 shader_parameter/vertex_noise_big = ExtResource("25_foam_disp")
@@ -183,7 +198,7 @@ mesh = SubResource("mesh_table")
 mesh = SubResource("mesh_paper")
 
 [node name="CountryMap" type="MeshInstance3D" parent="." unique_id=407846451]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.019981384, 0.09736328, -0.17822266)
 mesh = SubResource("mesh_country")
 
 [node name="CountryMapL" type="MeshInstance3D" parent="." unique_id=944210532]

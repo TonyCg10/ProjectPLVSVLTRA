@@ -61,10 +61,10 @@ public static class MapDataService
         var sMinV = new Dictionary<int, float>();
         var sMaxV = new Dictionary<int, float>();
 
-        // Sample every 4th pixel for speed
-        for (int y = 0; y < height; y += 4)
+        // Sample every 2nd pixel to preserve micro-states/islands while staying fast enough.
+        for (int y = 0; y < height; y += 2)
         {
-            for (int x = 0; x < width; x += 4)
+            for (int x = 0; x < width; x += 2)
             {
                 int idx = (y * width + x) * 4; // RGBA8 = 4 bytes per pixel
                 if (idx + 2 >= pixels.Length) continue;
@@ -210,15 +210,34 @@ public static class MapDataService
 
         byte[] allBytes = File.ReadAllBytes(binPath);
 
-        // Detect resolution from file size
-        int w = 1024, h = 1024;
-        if (allBytes.Length >= 16777216 && allBytes.Length % 16777216 == 0)
-        { w = 2048; h = 2048; }
-        else if (allBytes.Length >= 8388608 && allBytes.Length % 8388608 == 0)
-        { w = 2048; h = 1024; }
+        // Detect resolution from file size. Each pixel is RG16 => 4 bytes/pixel/layer.
+        // Prefer modern equirectangular layouts first (8K/4K), then legacy fallbacks.
+        (int w, int h)[] candidates =
+        {
+            (8192, 4096),
+            (4096, 2048),
+            (2048, 1024),
+            (1024, 512),
+            (2048, 2048),
+            (1024, 1024),
+        };
 
-        int layerSize = w * h * 4;
-        int numLayers = allBytes.Length / layerSize;
+        int w = 0;
+        int h = 0;
+        int layerSize = 0;
+        int numLayers = 0;
+        foreach (var (cw, ch) in candidates)
+        {
+            int cLayerSize = cw * ch * 4;
+            if (allBytes.Length >= cLayerSize && allBytes.Length % cLayerSize == 0)
+            {
+                w = cw;
+                h = ch;
+                layerSize = cLayerSize;
+                numLayers = allBytes.Length / cLayerSize;
+                break;
+            }
+        }
 
         if (numLayers == 0)
         {
@@ -250,8 +269,9 @@ public static class MapDataService
         /// </summary>
         public static float GetMargin(float uvSpan)
         {
-            float relMargin = Math.Clamp(0.35f, 0.10f, 0.60f);
-            float absMinMargin = 0.03f;
+            // Tiny countries need less absolute margin, otherwise they look tiny in National/Micro views.
+            float relMargin = uvSpan < 0.03f ? 0.12f : (uvSpan < 0.08f ? 0.18f : 0.28f);
+            float absMinMargin = uvSpan < 0.03f ? 0.004f : 0.01f;
             return Math.Max(uvSpan * relMargin, absMinMargin);
         }
     }

@@ -17,7 +17,7 @@ uniform float opacity : hint_range(0.0, 5.0, 0.01) = 0.4; // general opacity amo
 uniform float opacity_floor = 0.1; // opacity minimum
 uniform float opacity_ceiling = 0.8; // opacity maximum
 
-uniform bool pixelate = true;
+uniform bool pixelate = false;
 
 uniform float roughness : hint_range(0.0, 1.0, 0.01) = 0.4;
 uniform float height_scale = 1; // the scale of the waves in units
@@ -94,8 +94,7 @@ vec2 g_uv(vec2 uv, float speed, bool flipped, vec3 n) {
 }
 
 vec2 g_v(vec2 v, vec3 n, bool flipped){
-	//float sync_time = TIME;
-	float sync_time = 0.0;
+	float sync_time = TIME;
 	float f_v_n_t = float(v_noise_tile);
 
 	v.x = mod(v.x, f_v_n_t);
