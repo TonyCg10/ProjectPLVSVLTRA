@@ -35,6 +35,10 @@ window/stretch/aspect="expand"
 
 project/assembly_name="ProjectPLVSVLTRA"
 
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/terrain_3d/plugin.cfg")
+
 [input]
 
 ui_left={

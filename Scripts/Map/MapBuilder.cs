@@ -38,28 +38,69 @@ public static class MapBuilder
         mapView.SetMeshSize(meshSize);
 
         var mapMesh = mapView.MapMesh;
-        if (mapMesh?.Mesh is PlaneMesh pm) pm.Size = meshSize;
-        mapMesh.Position = new Vector3(0, 0.05f, 0);
+        // meshY=0: terrain heights are absolute (ocean at Y=1, land at Y=1.3+)
+        float meshY = 0f;
 
-        ConfigureClones(mapView, meshSize, mapMesh.Position.Y);
-        ConfigureCollision(mapView, meshSize);
+        // Generate 3D terrain mesh from heightmap data
+        float uvSpan = Mathf.Max(uvMax.X - uvMin.X, uvMax.Y - uvMin.Y);
+        float terrainHeight = ComputeTerrainHeight(uvSpan, meshSize);
+        var collisionShape = mapView.GetNodeOrNull<CollisionShape3D>("CollisionShape3D");
+
+        ArrayMesh generatedMesh = TerrainGenerator.Generate(
+            mapMesh,
+            mapView.HeightMapImage,
+            mapView.WaterMapImage,
+            meshSize,
+            uvMin, uvMax,
+            terrainHeight,
+            collisionShape,
+            512);
+
+        if (mapMesh != null)
+            mapMesh.Position = new Vector3(0, meshY, 0);
+
+        ConfigureClones(mapView, meshSize, meshY, generatedMesh);
         ConfigureOcean(mapView, meshSize);
         ConfigureDecorations(mapView, meshSize);
         ConfigureShader(mapView, uvMin, uvMax, countryIdx);
         ConfigureCamera(mapView, meshSize);
 
-        GD.Print($"[MapBuilder] National view built for {MapDataService.CountryCatalog[countryIdx]}");
+        GD.Print($"[MapBuilder] National view built for {MapDataService.CountryCatalog[countryIdx]} (terrain height: {terrainHeight:F1})");
     }
 
-    private static void ConfigureClones(MapView v, Vector2 s, float y)
+    /// <summary>
+    /// Computes terrain height scale based on UV span and mesh size.
+    /// Larger countries get taller mountains; tiny countries get subtle relief.
+    /// </summary>
+    private static float ComputeTerrainHeight(float uvSpan, Vector2 meshSize)
+    {
+        // Base: proportional to the smaller mesh dimension, clamped to reasonable range
+        float baseDim = Mathf.Min(meshSize.X, meshSize.Y);
+        // Scale height relative to mesh size — about 3-8% of mesh width
+        float heightRatio = Mathf.Clamp(uvSpan * 0.8f, 0.015f, 0.25f);
+        float terrainHeight = Mathf.Clamp(baseDim * heightRatio * 0.15f, 2f, 25f);
+        return terrainHeight;
+    }
+
+    private static void ConfigureClones(MapView v, Vector2 s, float y, ArrayMesh terrainMesh = null)
     {
         var l = v.GetNodeOrNull<MeshInstance3D>("CountryMapL");
         var r = v.GetNodeOrNull<MeshInstance3D>("CountryMapR");
-        if (l != null) l.Position = new Vector3(-s.X, y, 0);
-        if (r != null) r.Position = new Vector3(s.X, y, 0);
+        if (l != null)
+        {
+            l.Position = new Vector3(-s.X, y, 0);
+            if (terrainMesh != null) l.Mesh = terrainMesh;
+        }
+        if (r != null)
+        {
+            r.Position = new Vector3(s.X, y, 0);
+            if (terrainMesh != null) r.Mesh = terrainMesh;
+        }
     }
 
-    private static void ConfigureCollision(MapView v, Vector2 s)
+    // ConfigureCollision is now handled by TerrainGenerator (ConcavePolygonShape3D)
+    // Kept as fallback for cases where terrain generation is skipped.
+    private static void ConfigureCollisionFallback(MapView v, Vector2 s)
     {
         var cs = v.GetNodeOrNull<CollisionShape3D>("CollisionShape3D");
         if (cs != null) { cs.Shape = new BoxShape3D { Size = new Vector3(s.X, 1f, s.Y) }; cs.Position = new Vector3(0, 0.5f, 0); }
@@ -97,14 +138,10 @@ public static class MapBuilder
         float zf = 1.0f / Mathf.Max(uvSpan / 0.72f, 0.01f);
         mat.SetShaderParameter("detail_scale", Mathf.Clamp(zf * 48.0f, 180.0f, 1600.0f));
 
-        // Dynamic height scale — scale displacement proportional to UV span
-        // Small countries (small UV span) need LESS vertex displacement to prevent mesh explosion
-        float dynamicHeightScale = Mathf.Clamp(uvSpan * 25.0f, 1.5f, 12.0f);
-        mat.SetShaderParameter("height_scale", dynamicHeightScale);
-
-        // Detail displacement also needs scaling
-        float detailDispScale = Mathf.Clamp(uvSpan * 8.0f, 0.5f, 3.0f);
-        mat.SetShaderParameter("detail_displacement_scale", detailDispScale);
+        // Disable vertex displacement — the ArrayMesh already has real height geometry
+        mat.SetShaderParameter("use_height_displacement", false);
+        mat.SetShaderParameter("height_scale", 0.0f);
+        mat.SetShaderParameter("detail_displacement_scale", 0.0f);
 
         mat.SetShaderParameter("focus_radius", 0.48f);
         mat.SetShaderParameter("focus_feather", 0.18f);
@@ -160,17 +197,34 @@ public static class MapBuilder
 
         // Micro scene uses "StateMap" mesh
         var mapMesh = mapView.MapMesh;
-        if (mapMesh?.Mesh is PlaneMesh pm) pm.Size = meshSize;
-        mapMesh.Position = new Vector3(0, 0.05f, 0);
+        // meshY=0: terrain heights are absolute
+        float meshY = 0f;
 
-        ConfigureCollision(mapView, meshSize);
+        // Generate 3D terrain mesh from heightmap data
+        float uvSpan = Mathf.Max(uvMax.X - uvMin.X, uvMax.Y - uvMin.Y);
+        float terrainHeight = ComputeTerrainHeight(uvSpan, meshSize);
+        var collisionShape = mapView.GetNodeOrNull<CollisionShape3D>("CollisionShape3D");
+
+        TerrainGenerator.Generate(
+            mapMesh,
+            mapView.HeightMapImage,
+            mapView.WaterMapImage,
+            meshSize,
+            uvMin, uvMax,
+            terrainHeight,
+            collisionShape,
+            512);
+
+        if (mapMesh != null)
+            mapMesh.Position = new Vector3(0, meshY, 0);
+
         ConfigureMicroShader(mapView, uvMin, uvMax, countryIdx, stateIdx);
         ConfigureCamera(mapView, meshSize);
 
         string stateLabel = (stateIdx >= 0 && stateIdx < MapDataService.StateCatalog.Length)
             ? MapDataService.StateCatalog[stateIdx]
             : "unknown";
-        GD.Print($"[MapBuilder] Micro view built for {MapDataService.CountryCatalog[countryIdx]}/{stateLabel}");
+        GD.Print($"[MapBuilder] Micro view built for {MapDataService.CountryCatalog[countryIdx]}/{stateLabel} (terrain height: {terrainHeight:F1})");
     }
 
     private static void ConfigureMicroShader(MapView v, Vector2 uvMin, Vector2 uvMax, int cIdx, int sIdx)
@@ -187,12 +241,10 @@ public static class MapBuilder
         float zf = 1.0f / Mathf.Max(uvSpan / 0.72f, 0.01f);
         mat.SetShaderParameter("detail_scale", Mathf.Clamp(zf * 80.0f, 300.0f, 2400.0f));
 
-        // State-level height scale
-        float dynamicHeightScale = Mathf.Clamp(uvSpan * 30.0f, 1.0f, 10.0f);
-        mat.SetShaderParameter("height_scale", dynamicHeightScale);
-
-        float detailDispScale = Mathf.Clamp(uvSpan * 10.0f, 0.5f, 4.0f);
-        mat.SetShaderParameter("detail_displacement_scale", detailDispScale);
+        // Disable vertex displacement — the ArrayMesh already has real height geometry
+        mat.SetShaderParameter("use_height_displacement", false);
+        mat.SetShaderParameter("height_scale", 0.0f);
+        mat.SetShaderParameter("detail_displacement_scale", 0.0f);
 
         mat.SetShaderParameter("focus_radius", 0.48f);
         mat.SetShaderParameter("focus_feather", 0.15f);

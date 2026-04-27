@@ -18,6 +18,10 @@ public partial class MapView : StaticBody3D
     private Vector2 _idMapSize;
     private int _currentMapMode;
 
+    // Heightmap and water map images for terrain generation
+    public Image HeightMapImage { get; private set; }
+    public Image WaterMapImage { get; private set; }
+
     // UV window mapping (full world = 0,0 to 1,1; national = country bounds)
     private Vector2 _countryUVMin = Vector2.Zero;
     private Vector2 _countryUVMax = Vector2.One;
@@ -61,6 +65,22 @@ public partial class MapView : StaticBody3D
                     _idMapImage = tex.GetImage();
                     _idMapSize = new Vector2(_idMapImage.GetWidth(), _idMapImage.GetHeight());
                     MapTextureService.ScanBoundsFromImage(_idMapImage);
+                }
+
+                // Extract height map image for terrain generation
+                var heightTex = _mapMaterial.GetShaderParameter("height_map").As<Texture2D>();
+                if (heightTex != null)
+                {
+                    HeightMapImage = heightTex.GetImage();
+                    GD.Print($"[MapView] Height map loaded: {HeightMapImage.GetWidth()}x{HeightMapImage.GetHeight()}");
+                }
+
+                // Extract water map image for terrain generation
+                var waterTex = _mapMaterial.GetShaderParameter("water_map").As<Texture2D>();
+                if (waterTex != null)
+                {
+                    WaterMapImage = waterTex.GetImage();
+                    GD.Print($"[MapView] Water map loaded: {WaterMapImage.GetWidth()}x{WaterMapImage.GetHeight()}");
                 }
 
                 GD.Print("[MapView] Lookup textures and ID map ready.");

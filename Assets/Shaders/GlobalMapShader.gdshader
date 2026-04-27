@@ -1,5 +1,5 @@
 shader_type spatial;
-render_mode unshaded;
+render_mode unshaded, depth_draw_opaque;
 
 // Base data
 uniform sampler2D id_map : filter_nearest, hint_default_black;
@@ -13,7 +13,7 @@ uniform sampler2DArray world_data_tex;
 
 // Configuration
 uniform int map_mode : hint_range(0, 3) = 3;  // 0=Nodes, 1=Countries, 2=States, 3=Natural
-uniform float height_scale : hint_range(0.0, 5.0) = 1.5;
+uniform float height_scale : hint_range(0.0, 5.0) = 0.2;
 
 // Image adjustments
 uniform float brightness : hint_range(0.0, 2.0) = 1.0;
@@ -78,8 +78,8 @@ ivec2 node_coords(int node_id) {
 }
 
 void vertex() {
-    float h = texture(height_map, UV).r;
-    VERTEX.y += h * height_scale;
+    // El mapa global de estrategia siempre es plano para evitar picos poligonales
+    VERTEX.y += 0.0;
 }
 
 void fragment() {
@@ -150,9 +150,16 @@ void fragment() {
         final_col = mix(final_col, border_color_country, country_border * 0.3);
     }
 
-    // 6. Clone fade
+    // 6. Clone fade y transparencia del océano
     float dist_to_cam = distance(NODE_POSITION_WORLD.xz, CAMERA_POSITION_WORLD.xz);
     float fade_out = smoothstep(350.0, 550.0, dist_to_cam);
     ALBEDO = mix(final_col, vec3(0.0), portal_fade);
     ALBEDO = mix(ALBEDO, vec3(0.0), fade_out);
+    
+    // Si la altura es prácticamente 0, es océano: descartar para ver el WaterShader debajo
+    // y evitar bugs de profundidad/transparencia.
+    float h = texture(height_map, UV).r;
+    if (h < 0.005) {
+        discard;
+    }
 }

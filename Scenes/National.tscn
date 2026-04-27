@@ -8,26 +8,23 @@
 [ext_resource type="Texture2D" uid="uid://gy5xla757cyj" path="res://Assets/Terrain/8k_earth_normal_map.png" id="6_normal"]
 [ext_resource type="Texture2D" uid="uid://buoptatj3btva" path="res://Assets/Terrain/water_8k.png" id="7_water_mask"]
 [ext_resource type="Texture2D" uid="uid://ckfllnyws6wrx" path="res://Assets/Terrain/splatmap_godot.png" id="8_splat"]
-[ext_resource type="Texture2D" uid="uid://b5nuh2hjt6qgr" path="res://Assets/Textures/Grass004_2K-JPG/Grass004_2K-JPG_Color.jpg" id="9_grass_col"]
-[ext_resource type="Texture2D" uid="uid://dm8t8kd3kjxrs" path="res://Assets/Textures/Grass004_2K-JPG/Grass004_2K-JPG_NormalDX.jpg" id="10_grass_nrm"]
 [ext_resource type="Texture2D" uid="uid://cfnvd0tfv4u1f" path="res://Assets/Terrain/country_lookup.png" id="10_pl2v0"]
-[ext_resource type="Texture2D" uid="uid://ldrfylpijqbj" path="res://Assets/Textures/Terrain001_2K-PNG/Terrain001_2K_Soil.png" id="11_sand_col"]
-[ext_resource type="Texture2D" uid="uid://mbw1rtb5y6nn" path="res://Assets/Textures/Ground093C_2K-JPG/Ground093C_2K-JPG_NormalDX.jpg" id="12_sand_nrm"]
+[ext_resource type="Texture2D" uid="uid://ue2iboghbdcv" path="res://Assets/Textures/Terrain001_2K-PNG/Terrain001_2K_Color.png" id="12_q55ac"]
+[ext_resource type="Texture2D" uid="uid://bubdxn7gsxbnw" path="res://Assets/Textures/Paper001_2K-PNG/Paper001_2K-PNG_NormalGL.png" id="13_8p0ma"]
 [ext_resource type="Texture2D" uid="uid://d1mtr42hd127y" path="res://Assets/Textures/Terrain001_2K-PNG/Terrain001_2K_Details.png" id="13_rock_col"]
-[ext_resource type="Texture2D" uid="uid://i5hvshgn4kk4" path="res://Assets/Textures/Rock058_2K-JPG/Rock058_2K-JPG_NormalDX.jpg" id="14_rock_nrm"]
-[ext_resource type="Texture2D" uid="uid://bu5dcem1pli8w" path="res://Assets/Textures/Terrain001_2K-PNG/Terrain001_2K.exr" id="15_detail_disp"]
 [ext_resource type="Texture2D" uid="uid://b1re6xbelsi05" path="res://Assets/Textures/Wood029_2K-PNG/Wood029_2K-PNG_Color.png" id="16_wood_col"]
+[ext_resource type="Texture2D" uid="uid://doasjqghyfxkt" path="res://Assets/Textures/Rock058_2K-JPG/Rock058_2K-JPG_Color.jpg" id="17_hh4ab"]
 [ext_resource type="Texture2D" uid="uid://ewajahj546yh" path="res://Assets/Textures/Wood029_2K-PNG/Wood029_2K-PNG_NormalDX.png" id="17_wood_nrm"]
+[ext_resource type="Texture2D" uid="uid://60eg8bbfwk16" path="res://Assets/Textures/Rock058_2K-JPG/Rock058_2K-JPG_NormalGL.jpg" id="18_pl2v0"]
 [ext_resource type="Texture2D" uid="uid://cyrf70gyhw6y1" path="res://Assets/Textures/Wood029_2K-PNG/Wood029_2K-PNG_Roughness.png" id="18_wood_rgh"]
+[ext_resource type="Texture2D" uid="uid://bkf150xw88oji" path="res://Assets/Textures/Ground093C_2K-JPG/Ground093C_2K-JPG_Color.jpg" id="19_ny1eh"]
 [ext_resource type="Texture2D" uid="uid://d14nm6nab5bsd" path="res://Assets/Textures/Paper001_2K-PNG/Paper001_2K-PNG_Color.png" id="19_paper_col"]
+[ext_resource type="Texture2D" uid="uid://dqtdkh3rsa3hg" path="res://Assets/Textures/Ground093C_2K-JPG/Ground093C_2K-JPG_NormalGL.jpg" id="20_62adj"]
 [ext_resource type="Texture2D" uid="uid://dfo2mcdjc2826" path="res://Assets/Textures/Paper001_2K-PNG/Paper001_2K-PNG_NormalDX.png" id="20_paper_nrm"]
 [ext_resource type="Texture2D" uid="uid://bh4ddmcrnfhy" path="res://Assets/Textures/Paper001_2K-PNG/Paper001_2K-PNG_Roughness.png" id="21_paper_rgh"]
-[ext_resource type="Texture2D" uid="uid://cr3r8u2uuc6h2" path="res://Assets/Textures/Foam003_2K-PNG/Foam003_2K-PNG_Color.png" id="22_foam_col"]
 [ext_resource type="Texture2D" uid="uid://damden6bpal2r" path="res://Assets/Terrain/state_lookup.png" id="22_ny1eh"]
-[ext_resource type="Texture2D" uid="uid://b82sgrxeaky7v" path="res://Assets/Textures/Foam003_2K-PNG/Foam003_2K-PNG_NormalDX.png" id="23_foam_nrm"]
-[ext_resource type="Texture2D" uid="uid://dx3dg6nng1jmj" path="res://Assets/Textures/Foam003_2K-PNG/Foam003_2K-PNG_NormalGL.png" id="24_foam_ngl"]
-[ext_resource type="Texture2D" uid="uid://t1wf3uxjgcdd" path="res://Assets/Textures/Foam003_2K-PNG/Foam003_2K-PNG_Displacement.png" id="25_foam_disp"]
-[ext_resource type="Texture2D" uid="uid://bkb5rcn1wwhqq" path="res://Assets/Textures/Foam003_2K-PNG/Foam003_2K-PNG_Roughness.png" id="26_foam_rgh"]
+[ext_resource type="Texture2D" uid="uid://crh13nqvqeimk" path="res://Assets/Textures/Fabric082B_2K-PNG/Fabric082B_2K-PNG_NormalDX.png" id="25_q55ac"]
+[ext_resource type="Texture2D" uid="uid://c0yv8mh048314" path="res://Assets/Textures/Fabric082B_2K-PNG/Fabric082B_2K-PNG_AmbientOcclusion.png" id="26_q55ac"]
 [ext_resource type="Script" uid="uid://sttwm6bddh0s" path="res://Scripts/Map/MapView.cs" id="27_mapview"]
 [ext_resource type="Script" uid="uid://don6d66wnlu8j" path="res://Scripts/Camera/StrategyCamera.cs" id="28_camera"]
 [ext_resource type="Script" uid="uid://bxvsxqjg855bd" path="res://Scripts/UI/HUD.cs" id="29_hud"]
@@ -73,20 +70,20 @@ shader_parameter/target_country_color = Vector3(-1, -1, -1)
 shader_parameter/focus_radius = 0.42
 shader_parameter/focus_feather = 0.12
 shader_parameter/map_mode = 3
-shader_parameter/height_scale = 1.0000000475
+shader_parameter/height_scale = 2.10000009975
 shader_parameter/use_height_displacement = true
-shader_parameter/grass_albedo = ExtResource("9_grass_col")
-shader_parameter/grass_normal = ExtResource("10_grass_nrm")
-shader_parameter/sand_albedo = ExtResource("11_sand_col")
-shader_parameter/sand_normal = ExtResource("12_sand_nrm")
-shader_parameter/rock_albedo = ExtResource("13_rock_col")
-shader_parameter/rock_normal = ExtResource("14_rock_nrm")
-shader_parameter/detail_scale = 800.000037525
-shader_parameter/detail_displacement = ExtResource("15_detail_disp")
-shader_parameter/detail_displacement_scale = 2.0
-shader_parameter/procedural_biome_strength = 0.75
-shader_parameter/detail_contrast = 1.25
-shader_parameter/satellite_tint_strength = 0.06
+shader_parameter/grass_albedo = ExtResource("12_q55ac")
+shader_parameter/grass_normal = ExtResource("13_8p0ma")
+shader_parameter/sand_albedo = ExtResource("19_ny1eh")
+shader_parameter/sand_normal = ExtResource("20_62adj")
+shader_parameter/rock_albedo = ExtResource("17_hh4ab")
+shader_parameter/rock_normal = ExtResource("18_pl2v0")
+shader_parameter/detail_scale = 10.0
+shader_parameter/detail_displacement = ExtResource("13_rock_col")
+shader_parameter/detail_displacement_scale = 0.0
+shader_parameter/procedural_biome_strength = 1.0
+shader_parameter/detail_contrast = 1.20000003325
+shader_parameter/satellite_tint_strength = 0.30000001192093
 shader_parameter/macro_variation_strength = 0.12
 shader_parameter/overview_blur_px = 2.0
 shader_parameter/overview_dim = 0.25
@@ -112,6 +109,7 @@ material = SubResource("mat_regional")
 size = Vector2(540, 270)
 subdivide_width = 2048
 subdivide_depth = 2048
+center_offset = Vector3(0, 2, 0)
 
 [sub_resource type="BoxShape3D" id="box_collision"]
 size = Vector3(540, 1, 270)
@@ -119,55 +117,32 @@ size = Vector3(540, 1, 270)
 [sub_resource type="ShaderMaterial" id="mat_ocean"]
 render_priority = 0
 shader = ExtResource("2_water")
+shader_parameter/shallow_color = Color(0.08, 0.28, 0.42, 0.8)
+shader_parameter/deep_color = Color(0.01, 0.06, 0.2, 0.92)
+shader_parameter/foam_color = Color(0.85, 0.9, 0.95, 1)
+shader_parameter/depth_distance = 8.0
 shader_parameter/wave_speed = 0.08
-shader_parameter/edge_fade_power = 1.5
-shader_parameter/transmittence = 0.06
-shader_parameter/h_dist_trans_weight = 2.0
-shader_parameter/transmit_color = Color(0.02, 0.18, 0.28, 1)
-shader_parameter/depth_fade_distance = 12.0
-shader_parameter/surface_albedo = Color(0.08, 0.28, 0.42, 1)
-shader_parameter/surface_bottom = Color(0.02, 0.06, 0.22, 1)
-shader_parameter/opacity = 0.7
-shader_parameter/opacity_floor = 0.3
-shader_parameter/opacity_ceiling = 0.92
-shader_parameter/pixelate = false
-shader_parameter/roughness = 0.15
-shader_parameter/height_scale = 1.0
-shader_parameter/amplitude1 = 1.5
-shader_parameter/amplitude2 = 0.4
-shader_parameter/vertex_noise_big = ExtResource("25_foam_disp")
-shader_parameter/vertex_noise_big2 = ExtResource("26_foam_rgh")
-shader_parameter/v_noise_tile = 150
-shader_parameter/normal_noise = ExtResource("23_foam_nrm")
-shader_parameter/normal_noise2 = ExtResource("24_foam_ngl")
-shader_parameter/normal_noise_size = 40.0
-shader_parameter/normal_noise_speed = 0.03
-shader_parameter/v_normal_scale = 0.8
-shader_parameter/normal_map_w = 256
-shader_parameter/sky_color = Color(0.4, 0.55, 0.7, 1)
-shader_parameter/high_color = Color(0.45, 0.65, 0.78, 1)
-shader_parameter/low_color = Color(0.05, 0.12, 0.25, 1)
-shader_parameter/wave_color_range = 1.5
-shader_parameter/foamTexture = ExtResource("22_foam_col")
-shader_parameter/foamScale = 20.0
-shader_parameter/foamScrollSpeed = 0.25
-shader_parameter/foamEdgeBias = 0.05
-shader_parameter/foamFallOffDistance = 0.5
-shader_parameter/foamEdgeDistance = 0.3
-shader_parameter/shine_strength = 0.05
-shader_parameter/shine_shininess = 18.0
-shader_parameter/shadow = 0.72
-shader_parameter/shadow_width = 0.18
-shader_parameter/shadow_color = Color(0.705, 0.705, 0.705, 0.705)
-shader_parameter/_specular_smoothness = 0.199
-shader_parameter/_specular_strength = 0.075
-shader_parameter/_glossiness = 0.067
+shader_parameter/wave_height = 0.6
+shader_parameter/wave_steepness = 0.55
+shader_parameter/wave_length = 18.0
+shader_parameter/normal_map_a = ExtResource("25_q55ac")
+shader_parameter/normal_map_b = ExtResource("26_q55ac")
+shader_parameter/normal_scale = 60.0
+shader_parameter/normal_depth = 1.4
+shader_parameter/roughness = 0.06
+shader_parameter/metallic = 0.0
+shader_parameter/specular = 0.92
+shader_parameter/foam_threshold = 0.72
+shader_parameter/foam_softness = 0.18
+shader_parameter/fade_start = 350.0
+shader_parameter/fade_end = 550.0
 
 [sub_resource type="PlaneMesh" id="mesh_ocean"]
 material = SubResource("mat_ocean")
 size = Vector2(540, 270)
 subdivide_width = 128
 subdivide_depth = 128
+center_offset = Vector3(0, 1, 0)
 
 [sub_resource type="ProceduralSkyMaterial" id="sky_mat"]
 sky_top_color = Color(0.325, 0.49, 0.612, 1)
@@ -188,40 +163,112 @@ ssao_enabled = true
 glow_enabled = true
 glow_bloom = 0.05
 
+[sub_resource type="Gradient" id="Gradient_q55ac"]
+offsets = PackedFloat32Array(0.2, 1)
+colors = PackedColorArray(1, 1, 1, 1, 0, 0, 0, 1)
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_8p0ma"]
+noise_type = 2
+frequency = 0.03
+cellular_jitter = 3.0
+cellular_return_type = 0
+domain_warp_enabled = true
+domain_warp_type = 1
+domain_warp_amplitude = 50.0
+domain_warp_fractal_type = 2
+domain_warp_fractal_lacunarity = 1.5
+domain_warp_fractal_gain = 1.0
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_hh4ab"]
+noise = SubResource("FastNoiseLite_8p0ma")
+color_ramp = SubResource("Gradient_q55ac")
+seamless = true
+
+[sub_resource type="Terrain3DMaterial" id="Terrain3DMaterial_pl2v0"]
+_shader_parameters = {
+&"bias_distance": 512.0,
+&"blend_sharpness": 0.5,
+&"depth_blur": 0.0,
+&"enable_macro_variation": true,
+&"enable_projection": true,
+&"flat_terrain_normals": false,
+&"macro_variation1": Color(1, 1, 1, 1),
+&"macro_variation2": Color(1, 1, 1, 1),
+&"macro_variation_slope": 0.333,
+&"mipmap_bias": 1.0,
+&"noise1_angle": 0.0,
+&"noise1_offset": Vector2(0.5, 0.5),
+&"noise1_scale": 0.04,
+&"noise2_scale": 0.076,
+&"noise_texture": SubResource("NoiseTexture2D_hh4ab"),
+&"projection_threshold": 0.8
+}
+show_checkered = true
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ny1eh"]
+transparency = 4
+cull_mode = 2
+vertex_color_use_as_albedo = true
+backlight_enabled = true
+backlight = Color(0.5, 0.5, 0.5, 1)
+distance_fade_mode = 1
+distance_fade_min_distance = 128.0
+distance_fade_max_distance = 96.0
+
+[sub_resource type="Terrain3DMeshAsset" id="Terrain3DMeshAsset_62adj"]
+generated_type = 1
+height_offset = 0.5
+material_override = SubResource("StandardMaterial3D_ny1eh")
+last_lod = 0
+last_shadow_lod = 0
+lod0_range = 128.0
+
+[sub_resource type="Terrain3DAssets" id="Terrain3DAssets_2pkws"]
+mesh_list = Array[Terrain3DMeshAsset]([SubResource("Terrain3DMeshAsset_62adj")])
+
 [node name="National" type="StaticBody3D" unique_id=842810788]
 script = ExtResource("27_mapview")
 
 [node name="Table" type="MeshInstance3D" parent="." unique_id=1521211054]
+visible = false
 mesh = SubResource("mesh_table")
 
 [node name="Paper" type="MeshInstance3D" parent="." unique_id=1997748406]
+visible = false
 mesh = SubResource("mesh_paper")
 
 [node name="CountryMap" type="MeshInstance3D" parent="." unique_id=407846451]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.019981384, 0.09736328, -0.17822266)
+visible = false
 mesh = SubResource("mesh_country")
 
 [node name="CountryMapL" type="MeshInstance3D" parent="." unique_id=944210532]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -540, 0.05, 0)
+visible = false
 mesh = SubResource("mesh_country")
 
 [node name="CountryMapR" type="MeshInstance3D" parent="." unique_id=430086474]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 540, 0.05, 0)
+visible = false
 mesh = SubResource("mesh_country")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1344167580]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+visible = false
 shape = SubResource("box_collision")
 
 [node name="Ocean" type="MeshInstance3D" parent="." unique_id=1902800645]
+visible = false
 mesh = SubResource("mesh_ocean")
 
 [node name="OceanLeft" type="MeshInstance3D" parent="." unique_id=1378578074]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -540, 0, 0)
+visible = false
 mesh = SubResource("mesh_ocean")
 
 [node name="OceanRight" type="MeshInstance3D" parent="." unique_id=1093360699]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 540, 0, 0)
+visible = false
 mesh = SubResource("mesh_ocean")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=430647891]
@@ -280,3 +327,11 @@ text = "Population: 0"
 [node name="StatusLabel" type="Label" parent="UI/MarginContainer/VBoxContainer" unique_id=1611974300]
 layout_mode = 2
 text = "Waiting for engine..."
+
+[node name="Terrain3D" type="Terrain3D" parent="." unique_id=2078529017]
+data_directory = "res://Scenes"
+material = SubResource("Terrain3DMaterial_pl2v0")
+assets = SubResource("Terrain3DAssets_2pkws")
+show_checkered = true
+top_level = true
+metadata/_edit_lock_ = true

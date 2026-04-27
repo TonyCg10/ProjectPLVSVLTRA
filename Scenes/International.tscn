@@ -9,18 +9,11 @@
 [ext_resource type="Texture2D" uid="uid://cyrf70gyhw6y1" path="res://Assets/Textures/Wood029_2K-PNG/Wood029_2K-PNG_Roughness.png" id="7_wood_rgh"]
 [ext_resource type="Texture2D" uid="uid://d14nm6nab5bsd" path="res://Assets/Textures/Paper001_2K-PNG/Paper001_2K-PNG_Color.png" id="8_paper_col"]
 [ext_resource type="Texture2D" uid="uid://dfo2mcdjc2826" path="res://Assets/Textures/Paper001_2K-PNG/Paper001_2K-PNG_NormalDX.png" id="9_paper_nrm"]
-[ext_resource type="Texture2D" uid="uid://cfnvd0tfv4u1f" path="res://Assets/Terrain/country_lookup.png" id="10_htc6w"]
 [ext_resource type="Texture2D" uid="uid://bh4ddmcrnfhy" path="res://Assets/Textures/Paper001_2K-PNG/Paper001_2K-PNG_Roughness.png" id="10_paper_rgh"]
 [ext_resource type="Script" uid="uid://sttwm6bddh0s" path="res://Scripts/Map/MapView.cs" id="11_mapview"]
 [ext_resource type="Script" uid="uid://don6d66wnlu8j" path="res://Scripts/Camera/StrategyCamera.cs" id="12_camera"]
 [ext_resource type="Script" uid="uid://bxvsxqjg855bd" path="res://Scripts/UI/HUD.cs" id="13_hud"]
-[ext_resource type="Texture2D" uid="uid://damden6bpal2r" path="res://Assets/Terrain/state_lookup.png" id="13_lncpq"]
 [ext_resource type="Texture2D" uid="uid://beg0uvlraun62" path="res://Assets/Terrain/godot_id_map.png" id="14_idmap"]
-[ext_resource type="Texture2D" uid="uid://cr3r8u2uuc6h2" path="res://Assets/Textures/Foam003_2K-PNG/Foam003_2K-PNG_Color.png" id="15_foam_col"]
-[ext_resource type="Texture2D" uid="uid://b82sgrxeaky7v" path="res://Assets/Textures/Foam003_2K-PNG/Foam003_2K-PNG_NormalDX.png" id="16_foam_nrm"]
-[ext_resource type="Texture2D" uid="uid://dx3dg6nng1jmj" path="res://Assets/Textures/Foam003_2K-PNG/Foam003_2K-PNG_NormalGL.png" id="17_foam_ngl"]
-[ext_resource type="Texture2D" uid="uid://t1wf3uxjgcdd" path="res://Assets/Textures/Foam003_2K-PNG/Foam003_2K-PNG_Displacement.png" id="18_foam_disp"]
-[ext_resource type="Texture2D" uid="uid://bkb5rcn1wwhqq" path="res://Assets/Textures/Foam003_2K-PNG/Foam003_2K-PNG_Roughness.png" id="19_foam_rgh"]
 
 [sub_resource type="StandardMaterial3D" id="mat_wood"]
 albedo_texture = ExtResource("5_wood_col")
@@ -50,12 +43,10 @@ center_offset = Vector3(0, -1, 0)
 render_priority = 0
 shader = ExtResource("3_shader")
 shader_parameter/id_map = ExtResource("14_idmap")
-shader_parameter/country_lookup = ExtResource("10_htc6w")
-shader_parameter/state_lookup = ExtResource("13_lncpq")
 shader_parameter/height_map = ExtResource("2_height")
 shader_parameter/albedo_tex = ExtResource("1_albedo")
 shader_parameter/map_mode = 3
-shader_parameter/height_scale = 2.0
+shader_parameter/height_scale = 0.2
 shader_parameter/brightness = 1.0
 shader_parameter/contrast = 1.1
 shader_parameter/saturation = 1.1
@@ -67,6 +58,7 @@ shader_parameter/portal_fade = 0.0
 shader_parameter/border_width = 1.5
 shader_parameter/border_color_country = Color(0.08, 0.08, 0.06, 1)
 shader_parameter/border_color_state = Color(0.15, 0.12, 0.1, 1)
+shader_parameter/political_edge_aa = 1.0
 
 [sub_resource type="PlaneMesh" id="mesh_map"]
 material = SubResource("mat_global")
@@ -81,55 +73,29 @@ size = Vector3(540, 1, 270)
 [sub_resource type="ShaderMaterial" id="mat_ocean"]
 render_priority = 0
 shader = ExtResource("4_water")
-shader_parameter/wave_speed = 0.05
-shader_parameter/edge_fade_power = 1.5
-shader_parameter/transmittence = 0.05
-shader_parameter/h_dist_trans_weight = 2.5
-shader_parameter/transmit_color = Color(0.02, 0.15, 0.25, 1)
-shader_parameter/depth_fade_distance = 15.0
-shader_parameter/surface_albedo = Color(0.06, 0.22, 0.38, 1)
-shader_parameter/surface_bottom = Color(0.015, 0.05, 0.18, 1)
-shader_parameter/opacity = 0.65
-shader_parameter/opacity_floor = 0.25
-shader_parameter/opacity_ceiling = 0.88
-shader_parameter/pixelate = false
-shader_parameter/roughness = 0.18
-shader_parameter/height_scale = 0.5
-shader_parameter/amplitude1 = 1.2
-shader_parameter/amplitude2 = 0.3
-shader_parameter/vertex_noise_big = ExtResource("18_foam_disp")
-shader_parameter/vertex_noise_big2 = ExtResource("19_foam_rgh")
-shader_parameter/v_noise_tile = 200
-shader_parameter/normal_noise = ExtResource("16_foam_nrm")
-shader_parameter/normal_noise2 = ExtResource("17_foam_ngl")
-shader_parameter/normal_noise_size = 51.2
-shader_parameter/normal_noise_speed = 0.03
-shader_parameter/v_normal_scale = 0.6
-shader_parameter/normal_map_w = 256
-shader_parameter/sky_color = Color(0.05, 0.05, 0.06, 1)
-shader_parameter/high_color = Color(0.35, 0.55, 0.7, 1)
-shader_parameter/low_color = Color(0.04, 0.1, 0.2, 1)
-shader_parameter/wave_color_range = 1.5
-shader_parameter/foamTexture = ExtResource("15_foam_col")
-shader_parameter/foamScale = 25.0
-shader_parameter/foamScrollSpeed = 0.2
-shader_parameter/foamEdgeBias = 0.05
-shader_parameter/foamFallOffDistance = 0.4
-shader_parameter/foamEdgeDistance = 0.2
-shader_parameter/shine_strength = 0.05
-shader_parameter/shine_shininess = 18.0
-shader_parameter/shadow = 0.72
-shader_parameter/shadow_width = 0.18
-shader_parameter/shadow_color = Color(0.705, 0.705, 0.705, 0.705)
-shader_parameter/_specular_smoothness = 0.199
-shader_parameter/_specular_strength = 0.075
-shader_parameter/_glossiness = 0.067
+shader_parameter/shallow_color = Color(0.08, 0.3, 0.48, 0.82)
+shader_parameter/deep_color = Color(0.01, 0.07, 0.22, 0.95)
+shader_parameter/foam_color = Color(0.85, 0.9, 0.96, 1)
+shader_parameter/depth_distance = 8.0
+shader_parameter/wave_speed = 0.8
+shader_parameter/wave_height = 0.55
+shader_parameter/wave_steepness = 0.52
+shader_parameter/wave_length = 20.0
+shader_parameter/normal_scale = 5.0
+shader_parameter/normal_depth = 1.3
+shader_parameter/roughness = 0.05
+shader_parameter/metallic = 0.0
+shader_parameter/specular = 0.92
+shader_parameter/foam_threshold = 0.74
+shader_parameter/foam_softness = 0.18
+shader_parameter/fade_start = 350.0
+shader_parameter/fade_end = 550.0
 
 [sub_resource type="PlaneMesh" id="mesh_ocean"]
 material = SubResource("mat_ocean")
 size = Vector2(540, 270)
-subdivide_width = 128
-subdivide_depth = 128
+subdivide_width = 200
+subdivide_depth = 200
 
 [sub_resource type="Environment" id="env_int"]
 background_mode = 1
@@ -145,52 +111,54 @@ glow_enabled = true
 glow_intensity = 0.4
 glow_bloom = 0.05
 
-[node name="International" type="StaticBody3D" unique_id=872223323]
+[node name="International" type="StaticBody3D" unique_id=325482185]
 script = ExtResource("11_mapview")
 
-[node name="Table" type="MeshInstance3D" parent="." unique_id=1037636140]
+[node name="Table" type="MeshInstance3D" parent="." unique_id=1758865161]
 mesh = SubResource("mesh_table")
 
-[node name="Paper" type="MeshInstance3D" parent="." unique_id=478069131]
+[node name="Paper" type="MeshInstance3D" parent="." unique_id=927320001]
 mesh = SubResource("mesh_paper")
 
-[node name="WorldMap" type="MeshInstance3D" parent="." unique_id=1662193101]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0019683838, 2.1376343, -0.13244629)
+[node name="WorldMap" type="MeshInstance3D" parent="." unique_id=1927723063]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
 mesh = SubResource("mesh_map")
 
-[node name="WorldMapLeft" type="MeshInstance3D" parent="." unique_id=976679912]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -540, 2, 0)
+[node name="WorldMapLeft" type="MeshInstance3D" parent="." unique_id=2004122244]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -540, 0.6, 0)
 mesh = SubResource("mesh_map")
 
-[node name="WorldMapRight" type="MeshInstance3D" parent="." unique_id=1953862063]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 540, 2, 0)
+[node name="WorldMapRight" type="MeshInstance3D" parent="." unique_id=457821032]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 540, 0.6, 0)
 mesh = SubResource("mesh_map")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=849951345]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=226818118]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
 shape = SubResource("box_collision")
 
-[node name="Ocean" type="MeshInstance3D" parent="." unique_id=1021579783]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.9, 0)
+[node name="Ocean" type="MeshInstance3D" parent="." unique_id=981977306]
+visible = false
 mesh = SubResource("mesh_ocean")
 
-[node name="OceanLeft" type="MeshInstance3D" parent="." unique_id=1052046699]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -540, 1.9, 0)
+[node name="OceanLeft" type="MeshInstance3D" parent="." unique_id=1964355657]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -540, 0, 0)
+visible = false
 mesh = SubResource("mesh_ocean")
 
-[node name="OceanRight" type="MeshInstance3D" parent="." unique_id=403865561]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 540, 1.9, 0)
+[node name="OceanRight" type="MeshInstance3D" parent="." unique_id=2103537831]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 540, 0, 0)
+visible = false
 mesh = SubResource("mesh_ocean")
 
-[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1431705567]
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1109648622]
 environment = SubResource("env_int")
 
-[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=422451241]
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=236024620]
 transform = Transform3D(-0.956298, -0.274418, 0.100942, -0.004321, 0.358449, 0.93354, -0.292362, 0.892306, -0.343969, 0, 40, 0)
 light_energy = 0.8
 shadow_enabled = true
 
-[node name="Camera3D" type="Camera3D" parent="." unique_id=1084594175]
+[node name="Camera3D" type="Camera3D" parent="." unique_id=2067369315]
 transform = Transform3D(1, 0, 0, 0, 0.5, 0.866025, 0, -0.866025, 0.5, 0, 300, 40)
 current = true
 script = ExtResource("12_camera")
@@ -204,7 +172,7 @@ ResistanceRange = 15.0
 PortalScrollsRequired = 5
 LimitZ = Vector2(-200, 200)
 
-[node name="UI" type="Control" parent="." unique_id=2042967886]
+[node name="UI" type="Control" parent="." unique_id=1658486226]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -214,7 +182,7 @@ grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("13_hud")
 
-[node name="MarginContainer" type="MarginContainer" parent="UI" unique_id=1890800963]
+[node name="MarginContainer" type="MarginContainer" parent="UI" unique_id=120542190]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -226,17 +194,17 @@ theme_override_constants/margin_top = 20
 theme_override_constants/margin_right = 20
 theme_override_constants/margin_bottom = 20
 
-[node name="VBoxContainer" type="VBoxContainer" parent="UI/MarginContainer" unique_id=1822211803]
+[node name="VBoxContainer" type="VBoxContainer" parent="UI/MarginContainer" unique_id=1331162809]
 layout_mode = 2
 
-[node name="DateLabel" type="Label" parent="UI/MarginContainer/VBoxContainer" unique_id=1292987365]
+[node name="DateLabel" type="Label" parent="UI/MarginContainer/VBoxContainer" unique_id=452795808]
 layout_mode = 2
 text = "Loading..."
 
-[node name="PopLabel" type="Label" parent="UI/MarginContainer/VBoxContainer" unique_id=292579047]
+[node name="PopLabel" type="Label" parent="UI/MarginContainer/VBoxContainer" unique_id=440064302]
 layout_mode = 2
 text = "Population: 0"
 
-[node name="StatusLabel" type="Label" parent="UI/MarginContainer/VBoxContainer" unique_id=215714838]
+[node name="StatusLabel" type="Label" parent="UI/MarginContainer/VBoxContainer" unique_id=1780540739]
 layout_mode = 2
 text = "Waiting for engine..."

@@ -1,293 +1,194 @@
+// WaterShader.gdshader
+// Agua realista con olas Gerstner, espuma procedural y luz PBR.
+// No depende de screen_texture ni depth_texture (que fallan en muchas configs).
+// Godot 4.x — render_mode spatial + diffuse_burley + specular_schlick_ggx
+
 shader_type spatial;
-render_mode cull_disabled, world_vertex_coords, depth_draw_always, ambient_light_disabled, diffuse_burley;
+render_mode blend_mix,
+            depth_draw_opaque,
+            cull_back,
+            diffuse_burley,
+            specular_schlick_ggx;
 
-//uniform float sync_time;
-varying vec3 triplanar_pos;
-uniform float wave_speed = 0.05; // the speed of the vertex waves
-uniform float edge_fade_power = 2.0; // controls the contrast on the opacity fading when objects are on the surface
-uniform float transmittence = 0.04; // how much light transmits through the water
-uniform float h_dist_trans_weight = 3.0; // how much does the horizontal distance from the position affect its depth
-uniform vec3 transmit_color : source_color; // a color correction applied to the screen texture coming from under the water
+// ─────────────────────────────────────────────────────────────────────────────
+// COLORES DEL AGUA
+// ─────────────────────────────────────────────────────────────────────────────
+uniform vec4  shallow_color  : source_color = vec4(0.08, 0.28, 0.42, 0.80);
+uniform vec4  deep_color     : source_color = vec4(0.01, 0.06, 0.20, 0.92);
+uniform vec4  foam_color     : source_color = vec4(0.85, 0.90, 0.95, 1.00);
+uniform float depth_distance : hint_range(0.5, 30.0) = 8.0;
 
-uniform float depth_fade_distance : hint_range(0.0, 100.0, 0.1) = 5.0; // the downward distance of the depth fade
-uniform vec3 surface_albedo : source_color; // surface color on the top of the plane, in most areas this is overrriden by other colors, it will usually only be visible in shallow water
-uniform vec4 surface_bottom : source_color; // the color of the underside of the water
+// ─────────────────────────────────────────────────────────────────────────────
+// OLAS — parámetros de las 4 olas Gerstner superpuestas
+// ─────────────────────────────────────────────────────────────────────────────
+uniform float wave_speed      : hint_range(0.0, 5.0)  = 0.8;
+uniform float wave_height     : hint_range(0.0, 8.0)  = 0.6;   // altura máxima (unidades Godot)
+uniform float wave_steepness  : hint_range(0.0, 1.0)  = 0.55;  // 0=sinusoidal 1=muy puntiaguda
+uniform float wave_length     : hint_range(1.0, 100.0)= 18.0;  // longitud de onda base
 
-uniform float opacity : hint_range(0.0, 5.0, 0.01) = 0.4; // general opacity amount
-uniform float opacity_floor = 0.1; // opacity minimum
-uniform float opacity_ceiling = 0.8; // opacity maximum
+// ─────────────────────────────────────────────────────────────────────────────
+// SUPERFICIE — normal maps para detalle visual (no afectan geometría)
+// ─────────────────────────────────────────────────────────────────────────────
+uniform sampler2D normal_map_a  : hint_normal, filter_linear_mipmap, repeat_enable;
+uniform sampler2D normal_map_b  : hint_normal, filter_linear_mipmap, repeat_enable;
+uniform float     normal_scale  : hint_range(1.0, 300.0) = 60.0;  // tiling
+uniform float     normal_depth  : hint_range(0.0, 3.0)   = 1.4;   // intensidad
 
-uniform bool pixelate = false;
+// ─────────────────────────────────────────────────────────────────────────────
+// PBR
+// ─────────────────────────────────────────────────────────────────────────────
+uniform float roughness       : hint_range(0.0, 1.0) = 0.06;
+uniform float metallic        : hint_range(0.0, 1.0) = 0.0;
+uniform float specular        : hint_range(0.0, 1.0) = 0.92;
 
-uniform float roughness : hint_range(0.0, 1.0, 0.01) = 0.4;
-uniform float height_scale = 1; // the scale of the waves in units
-uniform float amplitude1 = 2; // the relative scale of vertex_noise_big
-uniform float amplitude2 = 0.5; // the relative scale of vertex_noise_big2
+// ─────────────────────────────────────────────────────────────────────────────
+// ESPUMA procedural en las crestas de las olas
+// ─────────────────────────────────────────────────────────────────────────────
+uniform float foam_threshold  : hint_range(0.0, 1.0) = 0.72;  // altura relativa que genera espuma
+uniform float foam_softness   : hint_range(0.01, 0.5)= 0.18;
 
-uniform sampler2D vertex_noise_big : repeat_enable;
-uniform sampler2D vertex_noise_big2 : repeat_enable;
+// ─────────────────────────────────────────────────────────────────────────────
+// FADE para ocultar los clones del mapa que están lejos
+// ─────────────────────────────────────────────────────────────────────────────
+uniform float fade_start      : hint_range(100.0, 600.0) = 350.0;
+uniform float fade_end        : hint_range(200.0, 800.0) = 550.0;
 
-uniform int v_noise_tile : hint_range(0, 300, 1) = 200; // tiling of the vertex_noise_texture in units
+// ─────────────────────────────────────────────────────────────────────────────
+// VARYINGS
+// ─────────────────────────────────────────────────────────────────────────────
+varying float v_wave_height_norm;  // [0,1] posición relativa de la ola
+varying vec3  v_world_pos;
+varying vec2  v_world_uv;
 
-// 2 normal textures that move at different angles to eachother to create an effect
-uniform sampler2D normal_noise : hint_normal, filter_linear_mipmap;
-uniform sampler2D normal_noise2 : hint_normal, filter_linear_mipmap;
 
-uniform float normal_noise_size = 51.2; // for correct scaling related to foam, this must be a multiple of 2 with thje decimal moved if you want it smaller
-uniform float normal_noise_speed = 0.05;
-uniform float v_normal_scale = 1; // scaling of the vertex normals effect
-uniform int normal_map_w = 256; // this should be set to the size of your normal map texture, which is assumed to be square
+// ─────────────────────────────────────────────────────────────────────────────
+// GERSTNER WAVE — una sola ola en dirección D con parámetros dados
+// Retorna: .xyz = desplazamiento vertex, .w = altura normalizada [0,1]
+// ─────────────────────────────────────────────────────────────────────────────
+vec4 gerstner_wave(vec2 pos, vec2 dir, float amplitude, float steepness,
+                   float wavelength, float speed, float time)
+{
+    float k       = TAU / wavelength;            // número de onda
+    float c       = sqrt(9.8 / k);              // velocidad de fase (gravedad realista)
+    float phase   = k * (dot(dir, pos) - c * speed * time);
+    float Q       = steepness / (k * amplitude);  // factor de forma Gerstner
 
-uniform vec3 sky_color : source_color;
-varying vec4 v_color;
+    float sinP = sin(phase);
+    float cosP = cos(phase);
 
-group_uniforms v_color;
-// to fake tramsittence, waves can have a different color as they get higher
-uniform vec3 high_color : source_color;
-uniform vec3 low_color : source_color;
-varying vec3 wave_color;
-uniform float wave_color_range = 2.0; // controls the power of the wave colors
-uniform sampler2D screen_texture : hint_screen_texture;
-uniform sampler2D depth_texture : hint_depth_texture;
+    vec3 disp;
+    disp.x = Q * amplitude * dir.x * cosP;
+    disp.z = Q * amplitude * dir.y * cosP;  // Y está como Z en Godot (Y = up)
+    disp.y = amplitude * sinP;              // altura
 
-group_uniforms foam;
-uniform sampler2D foamTexture: repeat_enable;
-uniform float foamScale: hint_range(1.0, 40, 1.0) = 25.0;
-uniform float foamScrollSpeed: hint_range(0.1, 1.0, 0.1) = 0.4;
-uniform float foamEdgeBias: hint_range(0.0, 1.0, 0.1) = 0.1;
-uniform float foamFallOffDistance: hint_range(0.0, 1.0, 0.1) = 0.4;
-uniform float foamEdgeDistance: hint_range(0.0, 1.0, 0.1) = 0.2;
-const vec4 edgeFalloffColor = vec4(0.8,0.8,0.8,0.6);
-
-float edge(float near, float far, float depth){
-	depth = 1.0 - 2.0 * depth;
-	return near * far / (far + depth * (near - far));
+    float height_norm = (sinP + 1.0) * 0.5;
+    return vec4(disp, height_norm);
 }
 
-vec2 round_to_pixel(vec2 i, int width){
-	float denom = 1.0 / float(width);
-	float _x = i.x + abs(mod(i.x, denom) - denom);
-	float _y = i.y + abs(mod(i.y , denom) - denom);
-	return vec2(_x, _y);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// VERTEX
+// ─────────────────────────────────────────────────────────────────────────────
+void vertex()
+{
+    vec3 world = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+    vec2 xz    = world.xz;
+
+    float t    = TIME * wave_speed;
+    float amp  = wave_height;
+    float st   = wave_steepness;
+    float wl   = wave_length;
+
+    // 4 olas superpuestas con distintas direcciones y longitudes
+    vec4 w1 = gerstner_wave(xz, normalize(vec2(1.0,  0.6)), amp * 1.00, st,       wl,       t, 1.0);
+    vec4 w2 = gerstner_wave(xz, normalize(vec2(0.4,  1.0)), amp * 0.65, st * 0.8, wl * 1.4, t, 1.0);
+    vec4 w3 = gerstner_wave(xz, normalize(vec2(-0.7, 0.5)), amp * 0.45, st * 0.6, wl * 0.7, t, 1.0);
+    vec4 w4 = gerstner_wave(xz, normalize(vec2(0.3, -0.8)), amp * 0.30, st * 0.5, wl * 2.0, t, 1.0);
+
+    vec3 disp = w1.xyz + w2.xyz + w3.xyz + w4.xyz;
+
+    VERTEX += disp;
+
+    // Altura normalizada [0,1] para la espuma en crestas
+    float h_norm = (w1.w * 0.5 + w2.w * 0.3 + w3.w * 0.15 + w4.w * 0.05);
+    v_wave_height_norm = h_norm;
+
+    v_world_pos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+    v_world_uv  = xz;
+
+    // ── Normales analíticas (derivadas de las olas Gerstner) ──────────────────
+    // Para cada ola: tangent_x += (-Q*amp*dir.x²*sin, amp*dir.x*cos, -Q*amp*dir.x*dir.y*sin)
+    // Simplificamos usando diferencias finitas (más robusto con múltiples olas)
+    float eps = 0.5;
+    vec2 xz_ex = xz + vec2(eps, 0.0);
+    vec2 xz_ez = xz + vec2(0.0, eps);
+
+    vec4 w1x = gerstner_wave(xz_ex, normalize(vec2(1.0, 0.6)),   amp*1.00, st,       wl,       t, 1.0);
+    vec4 w2x = gerstner_wave(xz_ex, normalize(vec2(0.4, 1.0)),   amp*0.65, st*0.8,   wl*1.4,   t, 1.0);
+    vec4 w3x = gerstner_wave(xz_ex, normalize(vec2(-0.7, 0.5)),  amp*0.45, st*0.6,   wl*0.7,   t, 1.0);
+    vec4 w4x = gerstner_wave(xz_ex, normalize(vec2(0.3, -0.8)),  amp*0.30, st*0.5,   wl*2.0,   t, 1.0);
+    vec3 dx = (w1x.xyz + w2x.xyz + w3x.xyz + w4x.xyz - disp) / eps;
+
+    vec4 w1z = gerstner_wave(xz_ez, normalize(vec2(1.0, 0.6)),   amp*1.00, st,       wl,       t, 1.0);
+    vec4 w2z = gerstner_wave(xz_ez, normalize(vec2(0.4, 1.0)),   amp*0.65, st*0.8,   wl*1.4,   t, 1.0);
+    vec4 w3z = gerstner_wave(xz_ez, normalize(vec2(-0.7, 0.5)),  amp*0.45, st*0.6,   wl*0.7,   t, 1.0);
+    vec4 w4z = gerstner_wave(xz_ez, normalize(vec2(0.3, -0.8)),  amp*0.30, st*0.5,   wl*2.0,   t, 1.0);
+    vec3 dz = (w1z.xyz + w2z.xyz + w3z.xyz + w4z.xyz - disp) / eps;
+
+    vec3 T = normalize(vec3(1.0 + dx.x, dx.y, dx.z));
+    vec3 B = normalize(vec3(dz.x, dz.y, 1.0 + dz.z));
+    NORMAL = normalize(cross(B, T));
 }
 
-float remap(float in_low, float in_high, float out_low, float out_high, float value){
-	return out_low + (value - in_low) * (out_high - out_low) / (in_high - in_low);
-}
 
-// global uv
-vec2 g_uv(vec2 uv, float speed, bool flipped, vec3 n) {
-	vec2 _xy;
-	_xy.x = uv.x;
-	_xy.y = uv.y;
+// ─────────────────────────────────────────────────────────────────────────────
+// FRAGMENT
+// ─────────────────────────────────────────────────────────────────────────────
+void fragment()
+{
+    float t = TIME * wave_speed;
 
-	float t_s = TIME * speed;
+    // ── Normal maps animados ───────────────────────────────────────────────────
+    vec2 uv1 = v_world_uv / normal_scale + vec2(t * 0.04,  t * 0.02);
+    vec2 uv2 = v_world_uv / normal_scale + vec2(-t * 0.03, t * 0.05) + vec2(0.5);
 
-	if(!flipped) {
-		_xy.x += t_s;
-		_xy.y += t_s;
-	} else {
-		_xy.x -= t_s;
-		_xy.y -= 0.0;
-	}
-	return _xy;
-}
+    vec3 n1 = texture(normal_map_a, uv1).rgb * 2.0 - 1.0;
+    vec3 n2 = texture(normal_map_b, uv2).rgb * 2.0 - 1.0;
+    vec3 detail_normal = normalize(n1 + n2);
 
-vec2 g_v(vec2 v, vec3 n, bool flipped){
-	float sync_time = TIME;
-	float f_v_n_t = float(v_noise_tile);
+    NORMAL_MAP       = detail_normal * 0.5 + 0.5;
+    NORMAL_MAP_DEPTH = normal_depth;
 
-	v.x = mod(v.x, f_v_n_t);
-	v.y = mod(v.y, f_v_n_t);
+    // ── Color del agua: mezcla shallow/deep según la altura de la ola ─────────
+    // En crestas (v_wave_height_norm alto) = agua más somera/clara
+    // En valles (v_wave_height_norm bajo)  = agua más profunda/oscura
+    float depth_t = 1.0 - smoothstep(0.3, 0.8, v_wave_height_norm);
+    vec3 water_color = mix(shallow_color.rgb, deep_color.rgb, depth_t);
 
-	vec2 _mapped = vec2(remap(0, f_v_n_t, 0, 1, v.x), remap(0, f_v_n_t, 0, 1, v.y));
+    // ── Espuma en crestas ─────────────────────────────────────────────────────
+    float foam_mask = smoothstep(foam_threshold - foam_softness,
+                                 foam_threshold + foam_softness,
+                                 v_wave_height_norm);
 
-	_mapped += n.xz;
-	if(flipped) {
-		_mapped.y -= (sync_time) * wave_speed;
-	} else {
-		_mapped.x += (sync_time) * wave_speed;
-	}
+    // Añadir un ruido procedural más suave para la espuma (sin aliasing estático)
+    vec2 noise_uv = v_world_uv * 0.8 + t * 0.4;
+    float foam_noise = sin(noise_uv.x) * cos(noise_uv.y) * 0.5 + 0.5;
+    foam_mask *= (0.6 + 0.4 * foam_noise);
+    foam_mask  = clamp(foam_mask, 0.0, 1.0);
 
-	_mapped.x = mod(_mapped.x, 1);
+    vec3 final_color = mix(water_color, foam_color.rgb, foam_mask);
+    float final_alpha = mix(mix(shallow_color.a, deep_color.a, depth_t),
+                            foam_color.a, foam_mask);
 
-	return _mapped;
-}
+    // ── Fade para los clones lejanos ──────────────────────────────────────────
+    float dist_xz = distance(NODE_POSITION_WORLD.xz, CAMERA_POSITION_WORLD.xz);
+    float fade    = 1.0 - smoothstep(fade_start, fade_end, dist_xz);
+    final_alpha  *= fade;
 
-float wave(vec2 y, vec3 n) {
-	vec2 _y1 = g_v(y, n, false);
-	vec2 _y2 = g_v(y + vec2(0.3, 0.476), n, true);
-
-	float s = 0.0;
-	s += texture(vertex_noise_big, mod(_y1, float(v_noise_tile))).r * amplitude1;
-	s += texture(vertex_noise_big2, mod(_y2, float(v_noise_tile))).r * amplitude2;
-
-	s -= height_scale/2.;
-	return s;
-}
-
-varying mat4 camera_mix;
-
-void vertex() {
-	//npw = NODE_POSITION_WORLD;
-	vec2 adj_v_pos = VERTEX.xz;
-
-	float _height = wave(adj_v_pos, NODE_POSITION_WORLD) * height_scale;
-	VERTEX.y += _height;
-
-	float wave_color_mix = remap(-wave_color_range, wave_color_range, 0.0, 1.0, _height);
-
-	wave_color_mix = clamp(wave_color_mix, 0.0, 1.0);
-	wave_color = mix(low_color, high_color, wave_color_mix);
-
-	vec2 e = vec2(0.1, 0.0);
-	float v_scale = height_scale * v_normal_scale;
-
-	vec3 normal = normalize(vec3(wave(adj_v_pos - e, NODE_POSITION_WORLD) * v_scale - wave(adj_v_pos + e, NODE_POSITION_WORLD) * v_scale, 1.0 * e.x, wave(adj_v_pos - e.yx, NODE_POSITION_WORLD) * v_scale - wave(adj_v_pos + e.yx, NODE_POSITION_WORLD) * v_scale));
-
-	NORMAL = normal;
-	triplanar_pos = VERTEX.xyz * vec3(1.0, 0, 1.0);
-	v_color = COLOR.rgba;
-	camera_mix = INV_VIEW_MATRIX;
-}
-
-void fragment() {
-	ROUGHNESS = roughness;
-	vec3 _albedo;
-	vec3 deep;
-
-	float depth3 = texture(depth_texture, SCREEN_UV).x;
-	
-	vec3 ndc3 = vec3(SCREEN_UV, depth3) * 2.0 - 1.0;
-	vec4 world3 = camera_mix * INV_PROJECTION_MATRIX * vec4(ndc3, 1.0);
-	vec3 world_position = world3.xyz / world3.w;
-
-	float vertex_y = (INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).y;
-
-	float _dist = distance(world_position.y, vertex_y);
-	// the horizontal distance to the location, used to fade as the camera gets farther away
-	float _h_dist = distance(triplanar_pos, world_position);
-
-	_dist += _h_dist * h_dist_trans_weight;
-
-	// Changes the color of geometry behind it as the water gets deeper
-	float depth_fade_blend = exp(-_dist / depth_fade_distance);
-
-	depth_fade_blend = clamp(depth_fade_blend, 0.0, 1.0);
-
-	// Makes the water more transparent as it gets more shallow
-	float alpha_blend = -_dist * transmittence;
-	alpha_blend = clamp(1.0 - exp(alpha_blend), 0.7, 1.0);
-	deep = mix(wave_color, surface_albedo, depth_fade_blend);
-
-	// Antz - pixelate on/off
-	vec2 rounded_uv;
-	if (pixelate)
-		rounded_uv = round_to_pixel((triplanar_pos.xz * (1.0 / normal_noise_size)) * 0.1, normal_map_w);
-	else
-		rounded_uv = (triplanar_pos.xz * (1.0 / normal_noise_size)) * 0.1;
-
-	vec3 n_map1 = texture(normal_noise, g_uv(rounded_uv, normal_noise_speed, false, NODE_POSITION_WORLD)).xyz;
-	vec3 n_map2 = texture(normal_noise2, g_uv(rounded_uv, normal_noise_speed, true, NODE_POSITION_WORLD)).xyz;
-
-	NORMAL_MAP = mix(n_map1, n_map2, 0.5);
-
-	if(FRONT_FACING) {
-		vec3 under = texture(screen_texture, SCREEN_UV).rgb;
-		_albedo = mix(under, deep, alpha_blend);
-		float _ALPHA = remap(0.0, opacity, opacity_floor, opacity_ceiling, pow(alpha_blend, edge_fade_power));
-		_albedo = mix(under + transmit_color, _albedo, _ALPHA);
-	} else {
-		NORMAL = -NORMAL;
-		NORMAL_MAP = mix(vec3(1.0,1.0,1.0), vec3(0.0,0.0,0.0), NORMAL_MAP);
-		vec3 over = texture(screen_texture, SCREEN_UV).rgb;
-		_albedo = mix(over, surface_bottom.rgb, surface_bottom.a);
-	}
-	
-	
-	
-	
-	
-	// Antz!!! FOAM!
-	// set edge near/far to your camera near/far - TODO convert to uniform
-	float z_depth = edge(0.05, 200, texture(depth_texture, SCREEN_UV).x); // depth texture
-	float z_pos = edge(0.05, 200, FRAGCOORD.z); // from position
-	float waterDepth = z_depth - z_pos; // diff
-	waterDepth = max(waterDepth, 0.0); // make sure waterdepth >= 0
-
-	float edgePatternScroll = TIME * foamScrollSpeed;
-    
-    vec2 scaledUV = rounded_uv * foamScale;
-	
-	// Calculate linear falloff value
-    float falloff = 1.0 - (waterDepth / foamFallOffDistance) + foamEdgeBias;
-
-    // Sample the mask
-    float channelA = texture(foamTexture, scaledUV - vec2(edgePatternScroll, cos(rounded_uv.x))).r;
-    float channelB = texture(foamTexture, scaledUV * 0.5 + vec2(sin(rounded_uv.y), edgePatternScroll)).b;
-
-    // Modify it to our liking
-    float mask = (channelA + channelB) * 0.95;
-    mask = pow(mask, 2.0);
-    mask = clamp(mask, 0.0, 1.0);
-	
-	 // Is this pixel in the leading edge?
-    if(waterDepth < foamFallOffDistance * foamEdgeDistance) {
-        // Modulate the surface alpha and the mask strength
-        float leading = waterDepth / (foamFallOffDistance * foamEdgeDistance);
-        //color.a *= leading;
-		ALPHA *= leading; // Godot
-        mask *= leading;
-    }
-
-    // Color the foam, blend based on alpha
-    vec3 edge = edgeFalloffColor.rgb * falloff * edgeFalloffColor.a;
-
-
-
-
-	
-	ALBEDO = _albedo;
-	ALBEDO = mix(sky_color, ALBEDO, v_color.a);
-	
-	// Subtract mask value from foam gradient, then add the foam value to the final pixel color
-    ALBEDO += clamp(edge - vec3(mask), 0.0, 1.0);
-
-    // Ocultar clones lejanos
-    float dist_to_cam = distance(NODE_POSITION_WORLD.xz, CAMERA_POSITION_WORLD.xz);
-    float fade_out = smoothstep(350.0, 550.0, dist_to_cam);
-    ALBEDO = mix(ALBEDO, vec3(0.0), fade_out);
-}
-
-group_uniforms lighting;
-
-uniform float shine_strength : hint_range(0.0f, 1.0f) = 0.05f;
-uniform float shine_shininess : hint_range(0.0f, 32.0f) = 18.0f;
-
-uniform float shadow : hint_range(0.0, 1.0) = 0.72;
-uniform float shadow_width : hint_range(0.001, 0.5) = 0.18;
-uniform vec4 shadow_color: source_color = vec4(0.705);
-
-uniform float _specular_smoothness : hint_range(0.0,0.5) = 0.199;
-uniform float _specular_strength : hint_range(0.0,9.25) = 0.075;
-uniform float _glossiness : hint_range(0.0,0.5) = 0.067;
-
-// light shader code from: https://godotshaders.com/shader/toon/ and https://godotshaders.com/shader/flexible-toon-shader-godot-4/
-void light() {
-	vec3 H = normalize(VIEW + LIGHT);
-
-	float NdotH = dot(NORMAL, H);
-	float specular_amount = max(pow(NdotH, shine_shininess * shine_shininess), 0.0f) * ATTENUATION;
-	SPECULAR_LIGHT += shine_strength * specular_amount * LIGHT_COLOR;
-
-	float NdotL = dot(NORMAL, LIGHT) * ATTENUATION;
-	NdotL = smoothstep(shadow - shadow_width, shadow + shadow_width, NdotL);
-
-	// specular suavizado
-	float specular_intensity = pow(NdotH, 1.0 / (_glossiness + 0.1));
-	vec3 specular = vec3(smoothstep(0.5 - _specular_smoothness, 0.5 + _specular_smoothness, specular_intensity));
-
-	DIFFUSE_LIGHT += ATTENUATION * mix(ALBEDO * shadow_color.rgb, (ALBEDO + (specular) * _specular_strength) * LIGHT_COLOR.rgb * 0.33, NdotL + 0.33/* * (smoothstep(1.0 -_rim_size - _rim_smoothness, 1.0 -_rim_size + _rim_smoothness, rimDot))*/);
-	DIFFUSE_LIGHT = mix(sky_color, DIFFUSE_LIGHT, v_color.r);
-	SPECULAR_LIGHT = mix(vec3(0.0), SPECULAR_LIGHT, v_color.r);
+    // ── Output PBR ────────────────────────────────────────────────────────────
+    ALBEDO    = final_color;
+    ALPHA     = final_alpha;
+    ROUGHNESS = mix(roughness, 0.6, foam_mask);   // espuma más rugosa
+    METALLIC  = metallic;
+    SPECULAR  = mix(specular, 0.1, foam_mask);    // espuma menos especular
 }

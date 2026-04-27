@@ -1,5 +1,6 @@
 using Godot;
 using Engine.Services;
+using PLVSVLTRA.Map;
 
 namespace PLVSVLTRA.UI;
 
@@ -166,13 +167,13 @@ public partial class HUD : Control
         _portalIndicator = sceneRoot.GetNodeOrNull<MeshInstance3D>("PortalIndicator");
         if (_portalIndicator != null) { _indicatorSetUp = true; return; }
 
-        // Create a torus/ring mesh as the portal target indicator
-        var torusMesh = new TorusMesh
+        // Create a small sphere/dot mesh as the portal target indicator
+        var sphereMesh = new SphereMesh
         {
-            InnerRadius = 3.0f,
-            OuterRadius = 5.0f,
-            Rings = 32,
-            RingSegments = 16
+            Radius = 0.5f,
+            Height = 1.0f,
+            RadialSegments = 16,
+            Rings = 16
         };
 
         var mat = new StandardMaterial3D
@@ -185,12 +186,12 @@ public partial class HUD : Control
             ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded,
             NoDepthTest = true
         };
-        torusMesh.SurfaceSetMaterial(0, mat);
+        sphereMesh.SurfaceSetMaterial(0, mat);
 
         _portalIndicator = new MeshInstance3D
         {
             Name = "PortalIndicator",
-            Mesh = torusMesh,
+            Mesh = sphereMesh,
             Visible = false,
             CastShadow = GeometryInstance3D.ShadowCastingSetting.Off
         };
@@ -241,12 +242,24 @@ public partial class HUD : Control
                 _portalIndicator.Scale = Vector3.One * scale;
 
                 // Glow intensifies near threshold
-                var mat = _portalIndicator.Mesh.SurfaceGetMaterial(0) as StandardMaterial3D;
-                if (mat != null)
+                // Get the country at center to set the color
+                var mapView = GetTree().CurrentScene as PLVSVLTRA.Map.MapView;
+                if (mapView != null)
                 {
-                    float alpha = Mathf.Lerp(0.2f, 0.8f, proximity);
-                    mat.AlbedoColor = new Color(0.1f, 0.9f, 1.0f, alpha);
-                    mat.EmissionEnergyMultiplier = Mathf.Lerp(1.0f, 4.0f, proximity);
+                    int countryIdx = mapView.GetNearestCountryToScreenCenter();
+                    if (countryIdx >= 0)
+                    {
+                        var countryCol = MapTextureService.GetCountryColor(countryIdx);
+                        
+                        var mat = _portalIndicator.Mesh.SurfaceGetMaterial(0) as StandardMaterial3D;
+                        if (mat != null)
+                        {
+                            float alpha = Mathf.Lerp(0.4f, 0.9f, proximity);
+                            mat.AlbedoColor = new Color(countryCol.R, countryCol.G, countryCol.B, alpha);
+                            mat.Emission = countryCol;
+                            mat.EmissionEnergyMultiplier = Mathf.Lerp(1.0f, 3.0f, proximity);
+                        }
+                    }
                 }
             }
         }

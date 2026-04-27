@@ -45,7 +45,7 @@ uniform sampler2D detail_displacement : repeat_enable, filter_linear_mipmap_anis
 uniform float detail_displacement_scale : hint_range(0.0, 10.0) = 1.0;
 uniform float procedural_biome_strength : hint_range(0.0, 1.0) = 0.75;
 uniform float detail_contrast : hint_range(0.5, 2.5) = 1.25;
-uniform float satellite_tint_strength : hint_range(0.0, 0.3) = 0.06;
+uniform float satellite_tint_strength : hint_range(0.0, 1.0) = 0.85;
 uniform float macro_variation_strength : hint_range(0.0, 0.35) = 0.12;
 uniform float overview_blur_px : hint_range(0.0, 6.0) = 2.0;
 uniform float overview_dim : hint_range(0.0, 1.0) = 0.2;
@@ -135,27 +135,28 @@ void vertex() {
         float detail_h = texture(detail_displacement, detail_uv).r * detail_displacement_scale * land_mask_v;
         current_h = (land_h * height_scale) + detail_h;
         VERTEX.y += current_h;
+
+        // Normales dinámicas para relieve PBR (only when shader controls displacement)
+        // When using a physical ArrayMesh, the mesh provides its own vertex normals.
+        float d = 0.002;
+        
+        float water_right = texture(water_map, v_world_uv + vec2(d, 0.0)).r;
+        float land_mask_right = 1.0 - step(0.5, water_right);
+        float h_right_base = texture(height_map, v_world_uv + vec2(d, 0.0)).r;
+        float h_right_det  = texture(detail_displacement, detail_uv + vec2(d * detail_scale, 0.0)).r * detail_displacement_scale * land_mask_right;
+        float h_right = (h_right_base * land_mask_right * height_scale) + h_right_det;
+        
+        float water_up = texture(water_map, v_world_uv + vec2(0.0, d)).r;
+        float land_mask_up = 1.0 - step(0.5, water_up);
+        float h_up_base    = texture(height_map, v_world_uv + vec2(0.0, d)).r;
+        float h_up_det     = texture(detail_displacement, detail_uv + vec2(0.0, d * detail_scale)).r * detail_displacement_scale * land_mask_up;
+        float h_up    = (h_up_base * land_mask_up * height_scale) + h_up_det;
+
+        float world_d = d * 540.0; 
+        vec3 tangent = normalize(vec3(world_d, h_right - current_h, 0.0));
+        vec3 binormal = normalize(vec3(0.0, h_up - current_h, world_d));
+        NORMAL = normalize(cross(binormal, tangent));
     }
-
-    // Normales dinámicas para relieve PBR
-    float d = 0.002;
-    
-    float water_right = texture(water_map, v_world_uv + vec2(d, 0.0)).r;
-    float land_mask_right = 1.0 - step(0.5, water_right);
-    float h_right_base = texture(height_map, v_world_uv + vec2(d, 0.0)).r;
-    float h_right_det  = texture(detail_displacement, detail_uv + vec2(d * detail_scale, 0.0)).r * detail_displacement_scale * land_mask_right;
-    float h_right = (h_right_base * land_mask_right * height_scale) + h_right_det;
-    
-    float water_up = texture(water_map, v_world_uv + vec2(0.0, d)).r;
-    float land_mask_up = 1.0 - step(0.5, water_up);
-    float h_up_base    = texture(height_map, v_world_uv + vec2(0.0, d)).r;
-    float h_up_det     = texture(detail_displacement, detail_uv + vec2(0.0, d * detail_scale)).r * detail_displacement_scale * land_mask_up;
-    float h_up    = (h_up_base * land_mask_up * height_scale) + h_up_det;
-
-    float world_d = d * 540.0; 
-    vec3 tangent = normalize(vec3(world_d, h_right - current_h, 0.0));
-    vec3 binormal = normalize(vec3(0.0, h_up - current_h, world_d));
-    NORMAL = normalize(cross(binormal, tangent));
     
     v_world_pos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 }
@@ -247,8 +248,8 @@ void fragment() {
     // Procedural biome fallback to avoid blocky low-res splat maps in close zoom.
     float h = v_height;
     float moisture = 1.0 - v_water;
-    float n0 = noise2d(v_world_uv * 180.0);
-    float n1 = noise2d(v_world_uv * 520.0);
+    float n0 = noise2d(v_world_uv * 12.0);
+    float n1 = noise2d(v_world_uv * 38.0);
     float biome_noise = (n0 * 0.65 + n1 * 0.35) * 0.22 - 0.11;
 
     float w_grass_p = clamp(1.0 - abs(h - 0.42) * 3.2 + moisture * 0.45 + biome_noise, 0.0, 1.0);
@@ -266,31 +267,44 @@ void fragment() {
         terrain_detail = (tex_grass * mixed_weights.r + tex_sand * mixed_weights.g + tex_rock * mixed_weights.b) / (total_w + 0.0001);
     }
     
-    // Use satellite as a subtle color tint — NOT as the base image
-    vec3 sat_tint = satellite_focus / max(dot(satellite_focus, vec3(0.33)), 0.1); 
-    sat_tint = clamp(sat_tint, 0.65, 1.45); 
+    // === TERRAIN COLORING ===
+    // Satellite image provides continuous, geographically-accurate color.
+    // PBR detail textures add only subtle micro-surface variation (no visible tiling).
+    terrain_detail = remap_contrast(terrain_detail, detail_contrast);
     
-    // Final focused terrain: PBR dominant (100% of base), satellite color-tint only (15%)
-    // This entirely removes the pixelation from the low-res satellite base!
-    // Add macro variation and local contrast so terrain reads as sharp PBR, not painted blur.
+    // Extract luminance-neutral detail pattern (texture variation without color shift)
+    float detail_lum = dot(terrain_detail, vec3(0.299, 0.587, 0.114));
+    vec3 detail_neutral = terrain_detail / max(detail_lum, 0.001);
+    
+    // Satellite is the dominant color; PBR detail adds surface micro-texture
+    float detail_influence = (1.0 - satellite_tint_strength) * 0.4;
+    vec3 tinted_terrain = satellite_focus * mix(vec3(1.0), detail_neutral, detail_influence);
+    
+    // Macro variation to break any residual patterns
     float macro = noise2d(v_world_uv * 34.0) * 2.0 - 1.0;
     vec3 macro_tint = vec3(1.0 + macro * macro_variation_strength);
-    terrain_detail = remap_contrast(terrain_detail, detail_contrast);
-    vec3 tinted_terrain = terrain_detail * macro_tint * mix(vec3(1.0), sat_tint, satellite_tint_strength);
+    tinted_terrain *= macro_tint;
     
-    // Smooth transition to water to hide jagged pixels
-    float water_w = max(fwidth(warped_water) * coastline_aa, 0.002);
-    float water_blend = smoothstep(0.16 - water_w, 0.16 + water_w, warped_water);
+    // === COASTLINE & WATER TRANSITION ===
+    float water_w = max(fwidth(warped_water) * coastline_aa, 0.003);
+    float water_blend = smoothstep(0.08 - water_w, 0.28 + water_w, warped_water);
     
-    // 6. Costa/agua con interacción visual suave
+    // Beach/sand zone: appears between dry land and water
+    float beach_inner = smoothstep(0.02, 0.08, warped_water);
+    float beach_outer = 1.0 - smoothstep(0.12, 0.28, warped_water);
+    float beach_zone = beach_inner * beach_outer;
+    vec3 beach_color = mix(vec3(0.82, 0.76, 0.60), satellite_focus * 1.1, 0.25);
+    tinted_terrain = mix(tinted_terrain, beach_color, beach_zone * 0.55);
+    
+    // Shoreline detection for foam/highlights
     vec2 water_ps = 1.0 / vec2(textureSize(water_map, 0));
     float w_right = texture(water_map, v_world_uv + vec2(water_ps.x, 0.0)).r;
     float w_up = texture(water_map, v_world_uv + vec2(0.0, water_ps.y)).r;
     float shoreline = clamp((abs(warped_water - w_right) + abs(warped_water - w_up)) * 8.0, 0.0, 1.0);
 
-    // Water in regional view should NOT reveal global satellite underneath.
-    vec3 water_base = mix(ocean_deep_color, ocean_shallow_color, shoreline * 0.85);
-    vec3 final_terrain_focus = mix(tinted_terrain, water_base, water_blend);
+    // Shallow water blending near coast (terrain slopes into ocean)
+    vec3 water_base = mix(ocean_shallow_color, ocean_deep_color, smoothstep(0.2, 0.6, warped_water));
+    vec3 final_terrain_focus = mix(tinted_terrain, water_base, water_blend * 0.85);
     
     // Overview (distant background) stays satellite-based since it's small anyway
     vec3 final_terrain_overview = satellite_overview * (1.0 - overview_dim * 0.3);
@@ -304,20 +318,17 @@ void fragment() {
     float dash = step(0.65, fract((FRAGCOORD.x - FRAGCOORD.y) * 0.08));
     
     if (map_mode == 1) {
-        // Países: solo borde blanco discontinuo
         final_color = mix(final_color, vec3(1.0), country_border * dash * land_mask);
     } else if (map_mode == 2) {
-        // Estados: borde blanco discontinuo para ambos (estado y país)
         final_color = mix(final_color, vec3(1.0), state_border * dash * land_mask);
         final_color = mix(final_color, vec3(1.0), country_border * dash * land_mask);
     } else if (map_mode == 3) {
-        // Natural mode — show borders subtly
         final_color = mix(final_color, border_color_country, country_border * 0.20 * land_mask);
     }
 
-    
-    vec3 water_highlight = mix(final_color, vec3(0.78, 0.86, 0.92), shoreline * 0.55);
-    vec3 land_highlight = mix(final_color, vec3(0.92, 0.92, 0.86), shoreline * 0.2);
+    // Shoreline highlights
+    vec3 water_highlight = mix(final_color, vec3(0.85, 0.90, 0.95), shoreline * 0.45);
+    vec3 land_highlight = mix(final_color, vec3(0.92, 0.92, 0.86), shoreline * 0.15);
     final_color = mix(land_highlight, water_highlight, water_blend);
 
     // 7. Mix overview only when explicitly enabled.
@@ -339,8 +350,8 @@ void fragment() {
     ROUGHNESS = mix(0.65, 0.05, water_blend);
     SPECULAR = mix(0.15, 0.9, water_blend);
     
-    // PBR Normal maps from detail textures (adds surface depth and breaks flatness)
-    if (focus_mask > 0.1 && water_blend < 0.9) {
+    // PBR Normal maps from detail textures (subtle surface depth)
+    if (focus_mask > 0.1 && water_blend < 0.8) {
         vec2 dnuv = v_local_uv * detail_scale;
         vec3 n_grass = texture(grass_normal, dnuv).rgb;
         vec3 n_sand  = texture(sand_normal,  dnuv).rgb;
@@ -348,9 +359,13 @@ void fragment() {
         vec3 blended_normal = (n_grass * mixed_weights.r + n_sand * mixed_weights.g + n_rock * mixed_weights.b) / (total_w + 0.0001);
         
         NORMAL_MAP = mix(blended_normal, vec3(0.5, 0.5, 1.0), water_blend);
-        NORMAL_MAP_DEPTH = 0.8 * focus_mask * (1.0 - water_blend);
+        NORMAL_MAP_DEPTH = 0.6 * focus_mask * (1.0 - water_blend);
     }
     
-    float target_alpha_water = 0.3 + (0.7 * portal_fade);
-    ALPHA = mix(1.0, target_alpha_water, water_blend);
+    // Discard only deep water — coastline is handled by terrain geometry sloping into ocean
+    if (water_blend > 0.92) {
+        discard;
+    }
+    
+    ALPHA = 1.0;
 }

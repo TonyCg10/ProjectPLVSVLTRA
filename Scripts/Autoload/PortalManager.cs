@@ -109,10 +109,19 @@ public partial class PortalManager : Node
                 ActiveCountryIdx = countryIdx;
                 PendingCountryIdx = countryIdx;
             }
+            else if (PendingCountryIdx >= 0)
+            {
+                ActiveCountryIdx = PendingCountryIdx;
+            }
+
             if (stateIdx >= 0)
             {
                 ActiveStateIdx = stateIdx;
                 PendingStateIdx = stateIdx;
+            }
+            else if (PendingStateIdx >= 0)
+            {
+                ActiveStateIdx = PendingStateIdx;
             }
 
             // Set entry height for the new level (coming from above)

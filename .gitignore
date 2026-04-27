@@ -6,6 +6,9 @@
 # Godot-specific ignores
 .godot/
 export_presets.cfg
+Addons/
+addons/
+demo/
 
 # Simulation-specific ignores
 saves/*
